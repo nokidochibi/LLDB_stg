@@ -515,7 +515,7 @@ button { font-size: 14px !important; }
       <!-- 最新のお知らせエリア（ここだけ表示する運用） -->
       <h3 class="font-bold text-lg mb-3 text-aiko-red">🔔 最新のお知らせ (vol.2.1)</h3>
       <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-6 text-sm text-gray-600">
-        <p>傾向タブに「最近演奏されていない曲」追加、楽曲タブに演奏回数が０回の曲追加、場所タブと傾向タブの位置変更、セトリのコピー機能追加、スマホのホーム画面に追加したときのアイコン変更など</p>
+        <p>セトリ画面の余白調整、セトリのコピー機能追加、アイコン変更、グラフへの数値表示などを行いました。</p>
       </div>
 
       <h3 class="font-bold text-lg mb-3 text-aiko-red">▼その他</h3>
@@ -553,7 +553,7 @@ button { font-size: 14px !important; }
 // GASのAPIエンドポイント
 const API_URL = "https://script.google.com/macros/s/AKfycbzmH5dDDdgd1pbxmtFWnjK7eo2Kgv4BBeBBUDcYzXdrFXVQl2KmPH8mNXyLsFMHWoWz/exec";
 // キャッシュキー (ここを変更して強制更新させる)
-const CACHE_KEY = 'lldb_data_v3_5';
+const CACHE_KEY = 'lldb_data_v3_6';
 
 // アプリの初期化Promise
 let appInitializedResolver;
@@ -1317,8 +1317,8 @@ function showLiveDetail(rec) {
         }
       }
       inMedley = true;
-      // 修正: メドレーの行も通常の曲と同じ構造で囲むことでレイアウト崩れ（右寄せ）を防止
-      setlistHtml += `<div class="setlist-item setlist-medley-title${nextSongIsEncore ? ' setlist-encore' : ''}">
+      // 修正: メドレーの行も通常の曲と同じ構造で囲み、かつ強力に左寄せを強制
+      setlistHtml += `<div class="setlist-item setlist-medley-title${nextSongIsEncore ? ' setlist-encore' : ''}" style="justify-content: flex-start;">
         <div class="setlist-left-content">
           <span class="setlist-item-number">${songNum++}.</span>
           <span class="setlist-item-title">メドレー</span>
@@ -1359,12 +1359,12 @@ function showLiveDetail(rec) {
   });
 
   const legendHtml = `
-    <div class="flex items-center mb-2 px-0">
-      <div class="w-1/2 text-right pr-2 text-xs text-gray-400 font-medium">リリース年</div>
-      <div class="flex-1 flex items-center text-xs text-gray-400 pl-1">
+    <div class="flex flex-col items-end justify-end pb-1">
+      <div class="text-[10px] text-gray-400 leading-none mb-1 text-center w-full">リリース年</div>
+      <div class="flex items-center text-[10px] text-gray-400 leading-none">
         <span class="mr-1">1998</span>
-        <div class="flex-1 h-[1px] bg-gray-300 mx-1 relative flex items-center justify-center">
-            <div class="w-3 h-3 rounded-full border border-white shadow-sm" style="background-color: var(--aiko-pink);"></div>
+        <div class="w-20 h-[1px] bg-gray-300 mx-1 relative flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full shadow-sm" style="background-color: var(--aiko-pink);"></div>
         </div>
         <span class="ml-1">${maxYear}</span>
       </div>
@@ -1379,14 +1379,18 @@ function showLiveDetail(rec) {
     </div>
   `;
 
-  // 見出しにコピー機能を追加（ボタン装飾なし）
-  const setlistTitleHtml = `<h3 class="font-bold mb-3 mt-8 text-gray-700 text-lg cursor-pointer flex items-center gap-2" onclick="copySetlist()">🎵 セットリスト</h3>`;
+  // 見出しと凡例を横並びにするヘッダー
+  const setlistHeaderHtml = `
+    <div class="flex justify-between items-end mt-8 mb-2">
+       <h3 class="font-bold text-gray-700 text-lg cursor-pointer flex items-center gap-2" onclick="copySetlist()">🎵 セットリスト</h3>
+       ${legendHtml}
+    </div>
+  `;
 
   const setlistSection = setlistHtml.trim()
     ? `
        ${summaryHtml}
-       ${setlistTitleHtml}
-       ${legendHtml}
+       ${setlistHeaderHtml}
        <div class="card-base shadow-none border border-gray-100 pb-2">
          ${setlistHtml}
        </div>`
@@ -1725,5 +1729,3 @@ function closeInfoModal() {
   document.getElementById('info-modal').style.display = 'none';
 }
 </script>
-</body>
-</html>
