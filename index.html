@@ -116,7 +116,7 @@ nav > div {
 
 /* セトリリストのスタイル修正: 余白を狭くして一覧性を向上 */
 .setlist-item {
-  padding: 3px 0; /* 8px -> 3px に変更 */
+  padding: 3px 0;
   margin-bottom: 0;
   background-color: transparent;
   border-bottom: 1px solid #f3f4f6;
@@ -125,7 +125,7 @@ nav > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 36px; /* タップしやすさは維持 */
+  min-height: 36px;
 }
 .setlist-item:last-child { border-bottom: none; }
 
@@ -155,7 +155,7 @@ nav > div {
 /* タイムラインバー用スタイル */
 .timeline-container {
   flex: 1;
-  height: 30px; /* タップしやすいように少し高く */
+  height: 30px;
   display: flex;
   align-items: center;
   position: relative;
@@ -178,14 +178,14 @@ nav > div {
   transform: translate(-50%, -50%);
   border: 2px solid white;
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  background-color: var(--aiko-pink); /* デフォルト色 */
+  background-color: var(--aiko-pink);
   z-index: 10;
   transition: transform 0.1s;
 }
 /* タップ時の年表示吹き出し */
 .year-tooltip {
   position: absolute;
-  bottom: 18px; /* ドットの上に表示 */
+  bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
   background-color: #374151;
@@ -648,7 +648,7 @@ function startLoadingAnimation(mode) {
         { id: 'loading-text-4', delay: 1500 },  // ぜー
         { id: 'loading-text-5', delay: 2000 }   // いんっ...!!!
     ];
-    totalDuration = 2800; // 完了までの時間（余韻含む）
+    totalDuration = 2700; // 完了までの時間（余韻含む）
   } else {
     // キャッシュなし（初回）: 少し待たせつつ期待感を煽る
     loadingTexts = [
@@ -1373,8 +1373,8 @@ function showLiveDetail(rec) {
     </div>
   `;
 
-  // 見出しにコピー機能を追加
-  const setlistTitleHtml = `<h3 class="font-bold mb-3 mt-8 text-gray-700 text-lg cursor-pointer flex items-center gap-2" onclick="copySetlist()">🎵 セットリスト <span class="text-xs font-normal text-gray-400 border border-gray-300 rounded px-1">コピー</span></h3>`;
+  // 見出しにコピー機能を追加（ボタン装飾なし）
+  const setlistTitleHtml = `<h3 class="font-bold mb-3 mt-8 text-gray-700 text-lg cursor-pointer flex items-center gap-2" onclick="copySetlist()">🎵 セットリスト</h3>`;
 
   const setlistSection = setlistHtml.trim()
     ? `
@@ -1419,7 +1419,10 @@ function copySetlist() {
 
   const text = currentDisplayingRecord.setlist
     .filter(s => s !== '__MEDLEY_START__' && s !== '__MEDLEY_END__')
-    .map(s => s.replace(/_アンコール(?: #\d+)?/g, '').trim())
+    .map((s, i) => {
+        const cleanName = s.replace(/_アンコール(?: #\d+)?/g, '').trim();
+        return `${i + 1}. ${cleanName}`;
+    })
     .join('\n');
     
   navigator.clipboard.writeText(text).then(() => {
@@ -1490,19 +1493,41 @@ function renderSongRanking() {
   const sortOrder = document.getElementById('song-sort').value;
   const searchTerm = document.getElementById('song-search-input').value.toLowerCase();
 
+  // フィルタリングとソート
   const sortedSongs = Object.entries(songStats)
     .filter(([song]) => song.toLowerCase().startsWith(searchTerm))
     .map(([song, count]) => ({ song, count }))
     .sort((a, b) => sortOrder === 'count-desc' ? b.count - a.count : a.count - b.count);
 
   document.getElementById('total-songs').textContent = Object.keys(songStats).length;
-  const fullRanking = Object.entries(songStats).sort((a,b) => b[1]-a[1]);
-  container.innerHTML = sortedSongs.map(item => {
-    const globalRank = fullRanking.findIndex(([song]) => song === item.song) + 1;
-    const rankColor = globalRank <= 3 && searchTerm === '' ? ['text-aiko-pink','text-aiko-yellow','text-aiko-blue'][globalRank-1] : 'text-gray-300';
+  
+  // 順位付けロジック（同率順位対応）
+  let currentRank = 0;
+  let lastCount = -1;
+  let skip = 1;
+
+  container.innerHTML = sortedSongs.map((item, index) => {
+    // 最初のアイテム、またはカウントが変わった場合にランクを更新
+    if (item.count !== lastCount) {
+        if (lastCount !== -1) {
+            // 前回のカウントと違う場合、スキップしていた分を加算してランクを進める（Standard Competition Ranking）
+            // 例: 1位, 1位, 3位... とする場合
+            currentRank += skip;
+            skip = 1;
+        } else {
+            // 初回
+            currentRank = 1;
+        }
+        lastCount = item.count;
+    } else {
+        // カウントが同じならランクは据え置きでスキップ数を増やす
+        skip++;
+    }
+
+    const rankColor = currentRank <= 3 && searchTerm === '' ? ['text-aiko-pink','text-aiko-yellow','text-aiko-blue'][currentRank-1] : 'text-gray-300';
     return `
       <div class="card-base p-3 mb-2 clickable-item flex items-center border border-gray-100" onclick="selectSong('${item.song.replace(/'/g, "\\'")}')">
-        <span class="rank-number ${rankColor}">${globalRank}</span>
+        <span class="rank-number ${rankColor}">${currentRank}</span>
         <span class="song-title text-gray-700">${item.song}</span>
         <span class="song-count">${item.count} <span>回</span></span>
       </div>`}).join('');
