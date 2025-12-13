@@ -418,7 +418,7 @@ button { font-size: 14px !important; }
     </div>
 
     <!-- ここに「最近演奏されていない曲TOP10」を追加 -->
-    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">💤 最近演奏されていない曲 TOP 10</h3>
+    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🕰️ 最近演奏されていない曲 TOP 10</h3>
     <p class="text-gray-500 mb-3 text-center text-sm">※過去に1度でも演奏された曲が対象だよ</p>
     <div id="not-played-recently-songs" class="card-base bg-white p-2"></div></div>
 
@@ -1084,6 +1084,9 @@ function analyzeLastPlayed(records) {
       const cleanName = s.replace(/_アンコール(?: #\d+)?/g, '').trim();
       if (!cleanName) return;
 
+      // 【修正】aikoの曲（楽曲データにある曲）のみ対象
+      if (!songData[cleanName]) return;
+
       // 既存データがない、または今回のライブの方が新しい場合更新
       if (!lastPlayedStats[cleanName] || recDate > lastPlayedStats[cleanName].dateObj) {
         lastPlayedStats[cleanName] = {
@@ -1109,12 +1112,12 @@ function renderLastPlayedRanking() {
     const rankColor = i < 3 ? ['text-aiko-pink','text-aiko-yellow','text-aiko-blue'][i] : 'text-gray-300';
     const borderClass = i !== sorted.length - 1 ? 'border-b border-gray-100' : '';
     
-    // フォーマット: 曲名　ライブ名（西暦）
-    return `<div class="p-3 clickable-item flex items-center ${borderClass}" onclick="selectSong('${song.replace(/'/g, "\\'")}')">
+    // 【修正】フォーマット変更: 曲名 <br> (西暦) ライブ名
+    return `<div class="p-3 clickable-item flex items-center ${borderClass}" onclick="selectSong('${song.replace(/'/g, "\\'")}'); switchToTab('song');">
       <span class="rank-number ${rankColor}">${i + 1}</span>
       <div class="flex-1 min-w-0">
         <div class="song-title text-gray-700 truncate">${song}</div>
-        <div class="text-xs text-gray-400 mt-0.5 truncate">${data.tourName} (${data.year})</div>
+        <div class="text-xs text-gray-400 mt-0.5 truncate">(${data.year}) ${data.tourName}</div>
       </div>
     </div>`;
   }).join('');
