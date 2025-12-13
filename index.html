@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Love Like DataBase vol.2.1</title>
+<title>Love Like DataBase vol.2.2</title>
 <meta name="theme-color" content="#ef4444">
 
 <!-- ホーム画面に追加したときの設定 -->
 <meta name="apple-mobile-web-app-title" content="LLDB">
 <meta name="application-name" content="LLDB">
 
-<!-- アプリアイコン (SVG Data URI) -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22%23ef4444%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2243%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3ELL%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2283%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3EDB%3C%2Ftext%3E%3C%2Fsvg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22%23ef4444%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2243%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3ELL%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2283%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3EDB%3C%2Ftext%3E%3C%2Fsvg%3E">
+<!-- アプリアイコン (SVG Data URI: 赤背景にLL/DBの2行ロゴ) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22%23ef4444%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2242%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3ELL%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2282%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3EDB%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22%23ef4444%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2242%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3ELL%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2282%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3EDB%3C%2Ftext%3E%3C%2Fsvg%3E">
 
 <!-- Web App Manifest (Data URI) -->
-<link rel="manifest" href='data:application/manifest+json,{"name":"Love Like DataBase","short_name":"LLDB","start_url":".","display":"standalone","background_color":"#F8F8F8","theme_color":"#ef4444","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22%23ef4444%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2243%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3ELL%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2283%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3EDB%3C%2Ftext%3E%3C%2Fsvg%3E","sizes":"192x192 512x512","type":"image/svg+xml"}]}'>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Love Like DataBase","short_name":"LLDB","start_url":".","display":"standalone","background_color":"#F8F8F8","theme_color":"#ef4444","icons":[{"src":"data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Crect%20width%3D%22512%22%20height%3D%22512%22%20fill%3D%22%23ef4444%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2242%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3ELL%3C%2Ftext%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2282%25%22%20dominant-baseline%3D%22middle%22%20text-anchor%3D%22middle%22%20fill%3D%22white%22%20font-family%3D%22sans-serif%22%20font-weight%3D%22900%22%20font-size%3D%22180%22%3EDB%3C%2Ftext%3E%3C%2Fsvg%3E","sizes":"192x192 512x512","type":"image/svg+xml"}]}'>
 
 <!-- Scripts and Styles -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -114,8 +114,9 @@ nav > div {
 .tab-item.active { color: white; background-color: #4B5563; }
 .tab-item.active i { color: white; }
 
+/* セトリリストのスタイル修正: 余白を狭くして一覧性を向上 */
 .setlist-item {
-  padding: 8px 0;
+  padding: 3px 0; /* 8px -> 3px に変更 */
   margin-bottom: 0;
   background-color: transparent;
   border-bottom: 1px solid #f3f4f6;
@@ -124,6 +125,7 @@ nav > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 36px; /* タップしやすさは維持 */
 }
 .setlist-item:last-child { border-bottom: none; }
 
@@ -356,7 +358,7 @@ button { font-size: 14px !important; }
 <div id="app" class="mobile-frame">
 
 <header id="main-header" class="shadow-sm">
-  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.2.1</h1>
+  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.2.2</h1>
   <button id="info-btn" style="background-color:white; color:#ef4444; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:bold; border:none; cursor:pointer; flex-shrink:0; margin-left:8px;">読んでね</button>
 </header>
 
@@ -428,7 +430,6 @@ button { font-size: 14px !important; }
       </div>
     </div>
 
-    <!-- ここに「最近演奏されていない曲TOP10」を追加 -->
     <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🕰️ 最近演奏されていない曲 TOP 10</h3>
     <p class="text-gray-500 mb-3 text-center text-sm">※過去に1度でも演奏された曲が対象だよ</p>
     <div id="not-played-recently-songs" class="card-base bg-white p-2"></div></div>
@@ -509,6 +510,18 @@ button { font-size: 14px !important; }
         <li>セトリのページの左上に「←（戻る）」ボタンがあるけど、ライブ名をタップしても前のページに戻るよ。右手でも押しやすいね。</li>
         <li>「表示中の公演数」の前の「🎫」を3回タップすると...？</li>
       </ul>
+      
+      <!-- 更新情報エリアを追加 -->
+      <h3 class="font-bold text-lg mb-3 text-aiko-red">▼更新履歴</h3>
+      <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-6">
+        <p class="font-bold text-gray-700 mb-1">vol.2.2</p>
+        <ul class="list-disc pl-5 space-y-1 text-sm text-gray-600">
+          <li>セトリ一覧の余白を調整し、より多くの曲が見えるようになりました。</li>
+          <li>アルバム別グラフに演奏回数を表示しました。</li>
+          <li>ホーム画面アイコンのデザインを変更しました。</li>
+        </ul>
+      </div>
+
       <h3 class="font-bold text-lg mb-3 text-aiko-red">▼その他</h3>
       <p>他にもいろいろおもちゃがあるよ<br>→<a href="https://lit.link/nokidochibi" target="_blank" class="text-blue-500 underline">https://lit.link/nokidochibi</a></p>
     </div>
@@ -526,7 +539,7 @@ button { font-size: 14px !important; }
       <i data-lucide="music" style="width:26px;height:26px"></i>
       <span class="text-[11px] font-bold">楽曲</span>
     </a>
-    <!-- 変更箇所：場所タブを傾向タブの前に移動 -->
+    <!-- 場所タブを傾向タブの前に移動 -->
     <a href="#" class="tab-item" data-tab="venue">
       <i data-lucide="map-pin" style="width:26px;height:26px"></i>
       <span class="text-[11px] font-bold">場所</span>
@@ -541,9 +554,9 @@ button { font-size: 14px !important; }
 </div>
 
 <script>
-// GASのAPIエンドポイント (前回と同じならそのままでOK)
+// GASのAPIエンドポイント
 const API_URL = "https://script.google.com/macros/s/AKfycbzmH5dDDdgd1pbxmtFWnjK7eo2Kgv4BBeBBUDcYzXdrFXVQl2KmPH8mNXyLsFMHWoWz/exec";
-// キャッシュキー (ここを変更して強制更新させる)
+// キャッシュキー
 const CACHE_KEY = 'lldb_data_v3_4';
 
 // アプリの初期化Promise
@@ -899,11 +912,24 @@ function renderAlbumChart() {
     options: {
       ...chartCommonOptions,
       indexAxis: 'y',
+      // ChartDataLabelsプラグインの設定を追加
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          color: 'white',
+          anchor: 'end',
+          align: 'start', // 棒の内側の右端に表示
+          offset: 4,
+          font: { weight: 'bold', size: 11 },
+          formatter: (value) => value > 0 ? value : ''
+        }
+      },
       scales: {
         x: { beginAtZero: true, ticks: { font: { size: 10 } } },
         y: { ticks: { font: { size: 10 }, autoSkip: false } }
       }
-    }
+    },
+    plugins: [ChartDataLabels] // プラグインを有効化
   });
 }
 
@@ -1048,14 +1074,6 @@ function renderVenueLiveCountChart() {
 
 function analyzeSongStats(records) {
   songStats = {};
-
-  // 【追加】楽曲データにある全曲を0回で初期化
-  if (songData) {
-    Object.keys(songData).forEach(songName => {
-      songStats[songName] = 0;
-    });
-  }
-
   records.forEach(rec => {
     rec.setlist.forEach(s => {
       const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
