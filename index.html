@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Love Like DataBase vol.2.2</title>
+<title>Love Like DataBase vol.2.1</title>
 <meta name="theme-color" content="#ef4444">
 
 <!-- Scripts and Styles -->
@@ -345,7 +345,7 @@ button { font-size: 14px !important; }
 <div id="app" class="mobile-frame">
 
 <header id="main-header" class="shadow-sm">
-  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.2.2</h1>
+  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.2.1</h1>
   <button id="info-btn" style="background-color:white; color:#ef4444; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:bold; border:none; cursor:pointer; flex-shrink:0; margin-left:8px;">読んでね</button>
 </header>
 
@@ -416,6 +416,11 @@ button { font-size: 14px !important; }
         <canvas id="album-chart" style="height:350px; max-height:350px"></canvas>
       </div>
     </div>
+
+    <!-- ここに「最近演奏されていない曲TOP10」を追加 -->
+    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">💤 最近演奏されていない曲 TOP 10</h3>
+    <p class="text-gray-500 mb-3 text-center text-sm">※過去に1度でも演奏された曲が対象だよ</p>
+    <div id="not-played-recently-songs" class="card-base bg-white p-2"></div></div>
 
     <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🎬 オープニング曲 TOP 10</h3>
     <div id="opening-songs" class="card-base bg-white p-2"></div></div>
@@ -510,13 +515,14 @@ button { font-size: 14px !important; }
       <i data-lucide="music" style="width:26px;height:26px"></i>
       <span class="text-[11px] font-bold">楽曲</span>
     </a>
-    <a href="#" class="tab-item" data-tab="pattern">
-      <i data-lucide="shuffle" style="width:26px;height:26px"></i>
-      <span class="text-[11px] font-bold">傾向</span>
-    </a>
+    <!-- 変更箇所：場所タブを傾向タブの前に移動 -->
     <a href="#" class="tab-item" data-tab="venue">
       <i data-lucide="map-pin" style="width:26px;height:26px"></i>
       <span class="text-[11px] font-bold">場所</span>
+    </a>
+    <a href="#" class="tab-item" data-tab="pattern">
+      <i data-lucide="shuffle" style="width:26px;height:26px"></i>
+      <span class="text-[11px] font-bold">傾向</span>
     </a>
   </div>
 </nav>
@@ -577,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-let allLiveRecords = [], songStats = {}, patternStats = {}, albumData = [], songData = {}, chartInstances = {};
+let allLiveRecords = [], songStats = {}, patternStats = {}, lastPlayedStats = {}, albumData = [], songData = {}, chartInstances = {};
 let selectedVenueInfo = null;
 
 // 一括データ取得＆キャッシュ更新
@@ -671,6 +677,7 @@ function initializeApp(records, albums, songs) {
 
   analyzeSongStats(records);
   analyzePatterns(records);
+  analyzeLastPlayed(records); // 最終演奏日の分析
   populateFilters(records);
   
   if (!document.getElementById('search-input').hasAttribute('data-listener-attached')) {
@@ -687,6 +694,7 @@ function initializeApp(records, albums, songs) {
   renderAlbumChart();
   renderSongRanking();
   renderPatternStats();
+  renderLastPlayedRanking(); // ご無沙汰ランキング描画
   renderVenueRanking();
   renderVenueLiveCountChart();
 }
@@ -1031,7 +1039,6 @@ function analyzeSongStats(records) {
   songStats = {};
 
   // 【追加】楽曲データにある全曲を0回で初期化
-  // これにより、演奏回数0回の曲もリストに含まれるようになります
   if (songData) {
     Object.keys(songData).forEach(songName => {
       songStats[songName] = 0;
@@ -1062,6 +1069,55 @@ function analyzePatterns(records) {
     });
   });
   patternStats = { openingSongs: o, encoreSongs: e, lastSongs: l };
+}
+
+function analyzeLastPlayed(records) {
+  lastPlayedStats = {};
+  records.forEach(rec => {
+    // 日付オブジェクト作成（rec.dateは "YYYY/MM/DD" 文字列または Dateオブジェクト）
+    const recDate = new Date(rec.date);
+    
+    rec.setlist.forEach(s => {
+      // 除外チェック
+      if (s.startsWith('__MEDLEY_') || s === 'メドレー') return;
+      
+      const cleanName = s.replace(/_アンコール(?: #\d+)?/g, '').trim();
+      if (!cleanName) return;
+
+      // 既存データがない、または今回のライブの方が新しい場合更新
+      if (!lastPlayedStats[cleanName] || recDate > lastPlayedStats[cleanName].dateObj) {
+        lastPlayedStats[cleanName] = {
+          dateObj: recDate,
+          tourName: rec.tourName,
+          year: rec.year
+        };
+      }
+    });
+  });
+}
+
+function renderLastPlayedRanking() {
+  const container = document.getElementById('not-played-recently-songs');
+  if (!container) return;
+
+  // 日付昇順（古い順）にソート
+  const sorted = Object.entries(lastPlayedStats)
+    .sort((a, b) => a[1].dateObj - b[1].dateObj)
+    .slice(0, 10);
+
+  container.innerHTML = sorted.map(([song, data], i) => {
+    const rankColor = i < 3 ? ['text-aiko-pink','text-aiko-yellow','text-aiko-blue'][i] : 'text-gray-300';
+    const borderClass = i !== sorted.length - 1 ? 'border-b border-gray-100' : '';
+    
+    // フォーマット: 曲名　ライブ名（西暦）
+    return `<div class="p-3 clickable-item flex items-center ${borderClass}" onclick="selectSong('${song.replace(/'/g, "\\'")}')">
+      <span class="rank-number ${rankColor}">${i + 1}</span>
+      <div class="flex-1 min-w-0">
+        <div class="song-title text-gray-700 truncate">${song}</div>
+        <div class="text-xs text-gray-400 mt-0.5 truncate">${data.tourName} (${data.year})</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function populateFilters(records, skipApply = false) {
