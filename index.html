@@ -746,7 +746,7 @@ button { font-size: 14px !important; }
 // GASのAPIエンドポイント
 const API_URL = "https://script.google.com/macros/s/AKfycbzmH5dDDdgd1pbxmtFWnjK7eo2Kgv4BBeBBUDcYzXdrFXVQl2KmPH8mNXyLsFMHWoWz/exec";
 // キャッシュキー (更新して強制リフレッシュ)
-const CACHE_KEY = 'lldb_data_v3_9_fix1';
+const CACHE_KEY = 'lldb_data_v3_9_fix2';
 
 // アプリの初期化Promise
 let appInitializedResolver;
@@ -799,7 +799,7 @@ let allLiveRecords = [],
     lastPlayedStats = {}, 
     albumData = [], 
     songData = {}, 
-    historyData = [], // 新規追加
+    historyData = [], 
     chartInstances = {};
 let selectedVenueInfo = null;
 let currentDisplayingRecord = null;
@@ -816,14 +816,18 @@ async function loadAllData(isAlreadyDisplayed) {
     }
 
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    initializeApp(data);
+    try {
+        initializeApp(data);
+    } catch(e) {
+        throw new Error("初期化エラー: " + e.message);
+    }
 
     if (!isAlreadyDisplayed) {
       appInitializedResolver();
     }
   } catch (error) {
     if (!isAlreadyDisplayed) {
-      handleError(error);
+      handleError(error); // ローディングを消してエラーを表示
     } else {
       console.log("Background update failed, keeping cached data.");
     }
@@ -880,10 +884,9 @@ function initializeApp(data) {
   allLiveRecords = data.liveRecords || [];
   albumData = data.albumData || [];
   songData = data.songData || {};
-  historyData = data.historyData || []; // GASで作成された歴史データ
+  historyData = data.historyData || []; 
 
   if (allLiveRecords.length > 0) {
-    // 最終更新日の計算（日付パースの安全策）
     try {
         const latestDate = allLiveRecords.reduce((latest, rec) => {
           const d = new Date(rec.date);
@@ -901,7 +904,6 @@ function initializeApp(data) {
   analyzeLastPlayed(allLiveRecords);
   populateFilters(allLiveRecords);
   
-  // 歴史タブのレンダリング（データがある場合のみ）
   if (historyData.length > 0) {
       renderHistoryTab();
   }
@@ -925,7 +927,7 @@ function initializeApp(data) {
 }
 
 // -----------------------------------------------------------
-// 軌跡（歴史）タブのロジック (簡易化)
+// 軌跡（歴史）タブのロジック
 // -----------------------------------------------------------
 function renderHistoryTab() {
     const container = document.getElementById('history-list-container');
@@ -935,7 +937,9 @@ function renderHistoryTab() {
     let lastYear = null;
 
     historyData.forEach(event => {
-        // 日付解析（文字列 'YYYY/MM/DD' を想定）
+        // 日付解析
+        if (!event.date || typeof event.date !== 'string') return;
+        
         let year, month, day;
         try {
             const parts = event.date.split('/');
@@ -943,7 +947,7 @@ function renderHistoryTab() {
             month = parts[1];
             day = parts[2];
         } catch(e) {
-            return; // 日付不正ならスキップ
+            return; 
         }
         
         const yearDisplay = (year !== lastYear) ? year : '';
@@ -953,7 +957,6 @@ function renderHistoryTab() {
 
         if (event.type === 'live') {
             dotClass = 'live'; tagText = 'LIVE'; tagClass = 'live';
-            // 安全な文字列エスケープ
             const safeTourName = event.title.replace(/'/g, "\\'");
             const safeDate = event.date;
             onClickAttr = `onclick="findAndShowLive('${safeDate}', '${safeTourName}')"`;
@@ -996,7 +999,7 @@ window.findAndShowLive = function(dateStr, tourName) {
 }
 
 // -----------------------------------------------------------
-// 以下、既存ロジック（変更なし）
+// その他
 // -----------------------------------------------------------
 function setupRandomTriggers() {
   function createDoubleTapHandler(callback) {
@@ -1839,6 +1842,7 @@ function searchRegion(region) {
 
 function selectSong(songName) {
   document.getElementById('song-search-input').value = songName;
+  // 楽曲タブへ移動してからランキング描画
   switchToTab('song'); 
   renderSongRanking();
   renderLiveCountChart();
@@ -1848,7 +1852,9 @@ function selectSong(songName) {
 function selectVenue(fullVenueName) {
   selectedVenueInfo = { type: 'venue', name: fullVenueName };
   document.getElementById('venue-search-input').value = fullVenueName;
+  // 場所タブへ移動
   switchToTab('venue');
+  // 明示的に会場タブをアクティブにする
   document.querySelectorAll('.venue-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.venue-tab[data-venue-tab="venue"]').classList.add('active');
   document.getElementById('venue-ranking-container').style.display = 'block';
@@ -1863,6 +1869,7 @@ function selectRegion(regionName) {
   selectedVenueInfo = { type: 'region', name: regionName };
   document.getElementById('venue-search-input').value = regionName;
   switchToTab('venue');
+  // 明示的に都道府県タブをアクティブにする
   document.querySelectorAll('.venue-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.venue-tab[data-venue-tab="region"]').classList.add('active');
   document.getElementById('venue-ranking-container').style.display = 'none';
@@ -1898,6 +1905,7 @@ function renderSongRanking() {
   const sortOrder = document.getElementById('song-sort').value;
   const searchTerm = document.getElementById('song-search-input').value.toLowerCase();
   
+  // トグルの状態を確認
   const isMedleyIncluded = document.getElementById('medley-toggle').checked;
   const targetStats = isMedleyIncluded ? songStats : songStatsNoMedley;
 
@@ -2094,7 +2102,12 @@ function setupEventListeners() {
 
 function handleError(error) {
   console.error("API Error:", error);
-  document.getElementById('live-list-container').innerHTML = `<p class="text-center text-red-500 py-8 text-sm">データ読み込み中にエラーが発生しました。<br>(${error.message})</p>`;
+  // 【重要修正】エラー発生時にローディングを強制終了し、コンテンツを表示
+  const loadingDiv = document.getElementById('loading-container');
+  if (loadingDiv) loadingDiv.style.display = 'none';
+  document.getElementById('main-content').style.opacity = '1';
+  
+  document.getElementById('live-list-container').innerHTML = `<p class="text-center text-red-500 py-8 text-sm font-bold">データ読み込み中にエラーが発生しました。<br>(${error.message})</p>`;
 }
 
 function showModal(song, type) {
