@@ -132,26 +132,35 @@ nav > div {
 }
 .setlist-item:last-child { border-bottom: none; }
 
-/* メドレーの黄色いライン */
-.setlist-medley, .setlist-medley-title {
+/* メドレータイトル行（黄色背景＋黄色ライン） */
+.setlist-medley-title {
   border-left-color: var(--aiko-yellow) !important;
-  background-color: #fffbeb; /* 薄い黄色背景も少しつけるとわかりやすい */
+  background-color: #fffbeb !important; /* 薄い黄色背景 */
 }
 
-/* アンコールの赤いライン */
-.setlist-encore {
-  border-left-color: var(--aiko-red) !important;
-  background-color: #fef2f2; /* 薄い赤色背景 */
+/* メドレー内の曲（黄色ラインのみ、背景なし） */
+.setlist-medley {
+  border-left-color: var(--aiko-yellow) !important;
+  background-color: transparent !important;
 }
 
 /* アンコールヘッダー（拍手などのテキスト） */
 .setlist-encore-header {
-  margin-top: 12px;
+  margin-top: 16px;
   margin-bottom: 4px;
-  font-weight: bold;
+  font-weight: 800; /* 太字 */
   color: var(--aiko-red);
-  font-size: 14px;
-  padding-left: 4px;
+  font-size: 18px; /* フォントサイズ大きく */
+  padding: 4px 8px;
+  background-color: #fef2f2; /* 薄い赤背景 */
+  border-left: 4px solid var(--aiko-red);
+  border-radius: 0 4px 4px 0;
+}
+
+/* アンコール内の曲（赤ラインのみ、背景なし） */
+.setlist-encore {
+  border-left-color: var(--aiko-red) !important;
+  background-color: transparent !important;
 }
 
 .setlist-left-content {
