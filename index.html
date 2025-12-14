@@ -223,6 +223,14 @@ nav > div {
   border-top: 1px solid #e5e7eb;
   padding-bottom: 20px;
 }
+.history-grid-header {
+  position: sticky;
+  top: 64px; /* アプリヘッダーの高さ分下げる */
+  background-color: #f9fafb;
+  z-index: 30;
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .history-row {
   display: grid;
   grid-template-columns: 48px 1fr 1fr 1fr; /* 年月, LIVE, SINGLE, ALBUM */
@@ -262,6 +270,7 @@ nav > div {
   justify-content: center;
   align-items: center;
   padding: 4px 2px;
+  overflow: hidden; /* コンテンツがはみ出ないように */
 }
 .col-single, .col-album {
   border-left: 1px dashed #e5e7eb;
@@ -316,20 +325,24 @@ nav > div {
   z-index: 2;
   width: 90%;
   max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  line-height: 1.1;
+  line-height: 1.2;
   margin-bottom: 2px;
   cursor: default;
 }
+
 /* LIVEチップ: ツアーラインの上に乗る */
 .event-chip.live {
   background-color: white;
   color: #ef4444;
   border: 1px solid #ef4444;
   cursor: pointer; /* 詳細へ飛べる */
+  
+  /* LIVE名は省略設定 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 /* ライン上のチップは少し浮かせる */
 .tour-line + .event-chip.live {
@@ -340,11 +353,21 @@ nav > div {
   background-color: #e0f2fe; /* 薄い青背景 */
   color: #0284c7;
   border: 1px solid #bae6fd;
+  
+  /* Singleは改行許可 */
+  white-space: normal;
+  height: auto;
+  word-wrap: break-word;
 }
 .event-chip.album {
   background-color: #fef9c3; /* 薄い黄背景 */
   color: #854d0e;
   border: 1px solid #fde047;
+  
+  /* Albumも改行許可 */
+  white-space: normal;
+  height: auto;
+  word-wrap: break-word;
 }
 
 header {
@@ -634,7 +657,7 @@ button { font-size: 14px !important; }
       <p class="text-gray-500 text-sm mt-1">ライブ、シングル、アルバムの歴史</p>
     </div>
     
-    <div class="history-grid-header flex text-[10px] font-bold text-gray-400 border-b pb-1 mb-0 sticky top-0 bg-gray-50 z-20">
+    <div class="history-grid-header flex text-[10px] font-bold text-gray-400 pb-1 mb-0">
       <div style="width:48px; text-align:center;">年月</div>
       <div class="flex-1 text-center">LIVE</div>
       <div class="flex-1 text-center border-l border-dashed border-gray-200">SINGLE</div>
@@ -741,8 +764,8 @@ button { font-size: 14px !important; }
 <script>
 // GASのAPIエンドポイント（ユーザー指定のstg環境URL）
 const API_URL = "https://script.google.com/macros/s/AKfycbxDCVXoHkQcs1FjMc5o9wA7KyjwQM5OnDweXEaee-tMb_AeGncibSHU4BEazCDmEBT1dA/exec";
-// キャッシュキー (更新して強制リフレッシュ)
-const CACHE_KEY = 'lldb_data_v3_9_fix6'; 
+// キャッシュキー (更新して強制リフレッシュ + フリーズ対策)
+const CACHE_KEY = 'lldb_data_v3_9_fix7'; 
 
 // アプリの初期化Promise
 let appInitializedResolver;
@@ -824,6 +847,8 @@ async function loadAllData(isAlreadyDisplayed) {
   } catch (error) {
     if (!isAlreadyDisplayed) {
       handleError(error); 
+      // エラー時でも強制的にPromiseを解決させ、ローディング画面が固まらないようにする
+      appInitializedResolver();
     } else {
       console.log("Background update failed, keeping cached data.");
     }
@@ -926,21 +951,23 @@ function initializeApp(data) {
 // 軌跡（歴史）タブのロジック (Vol.3.1 リニューアル版)
 // -----------------------------------------------------------
 function formatTourName(name) {
-  // ツアー名を簡略化 (例: "Love Like Pop vol.3" -> "Pop3")
   if (!name) return "";
   let n = name;
+  
+  // サブタイトル（〜、~ 以降）をカット
+  n = n.split(/[〜~]/)[0];
   
   // 基本的な置換
   if (n.match(/Love Like (Pop|Rock|Aloha)/i)) {
       n = n.replace(/Love Like /i, '');
       n = n.replace(/ vol\.?/i, ''); // vol. または vol
-      n = n.replace(/追加公演/g, ''); // 追加公演の文字は消す（同じツアー扱いにするため）
+      n = n.replace(/追加公演/g, ''); // 追加公演の文字は消す
       n = n.trim();
       
-      // Pop12.5 などのケースも考慮しつつ、余計な空白を詰める
+      // Pop12.5 などのケースも考慮
       n = n.replace(/\s+/g, '');
   }
-  return n;
+  return n.trim();
 }
 
 function renderHistoryTab() {
@@ -994,6 +1021,16 @@ function renderHistoryTab() {
     // イベントを各月に振り分け
     historyData.forEach(event => {
         if (!event.date) return;
+
+        // 除外対象のフィルタリング
+        if (event.title === '深夜2時「寒いね」って彼とスーパー行ったじゃん。') return;
+
+        // アルバム名の正規化（まとめ１、まとめ２ → まとめ）
+        let title = event.title;
+        if (event.type === 'album' && title.startsWith('まとめ')) {
+            title = 'まとめ';
+        }
+
         const d = new Date(event.date);
         const ym = `${d.getFullYear()}/${('0' + (d.getMonth() + 1)).slice(-2)}`;
         if (timelineData[ym]) {
@@ -1008,9 +1045,12 @@ function renderHistoryTab() {
                     });
                 }
             } else if (event.type === 'single') {
-                timelineData[ym].single.push({ name: event.title });
+                timelineData[ym].single.push({ name: title });
             } else if (event.type === 'album') {
-                timelineData[ym].album.push({ name: event.title });
+                // 同じ月に「まとめ1」「まとめ2」がある場合、「まとめ」が2つにならないように重複チェック
+                if (!timelineData[ym].album.some(a => a.name === title)) {
+                    timelineData[ym].album.push({ name: title });
+                }
             }
         }
     });
@@ -1074,8 +1114,12 @@ function renderHistoryTab() {
             });
         }
 
-        // SINGLE列
-        let singleHtml = data.single.map(s => `<div class="event-chip single">${s.name}</div>`).join('');
+        // SINGLE列: 同月発売はスラッシュ区切りでまとめる
+        let singleHtml = '';
+        if (data.single.length > 0) {
+            const combinedName = data.single.map(s => s.name).join('/');
+            singleHtml = `<div class="event-chip single">${combinedName}</div>`;
+        }
 
         // ALBUM列
         let albumHtml = data.album.map(a => `<div class="event-chip album">${a.name}</div>`).join('');
