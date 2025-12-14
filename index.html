@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Love Like DataBase vol.3.1</title>
+<title>Love Like DataBase vol.3.0</title>
 <meta name="theme-color" content="#ef4444">
 
 <!-- ホーム画面に追加したときの設定 -->
@@ -249,7 +249,7 @@ nav > div {
   opacity: 1;
 }
 
-/* 軌跡（年表）グリッドレイアウト - Vol.3.1 新規 */
+/* 軌跡（年表）グリッドレイアウト - Vol.3.0 新規 */
 .history-grid-container {
   display: flex;
   flex-direction: column;
@@ -404,6 +404,13 @@ nav > div {
   word-wrap: break-word;
 }
 
+/* タップ操作を改善するためのCSS（ズーム防止・タップ遅延解消） */
+.tap-trigger {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 header {
   background-color: var(--aiko-red) !important;
   color: white !important;
@@ -556,7 +563,7 @@ button { font-size: 14px !important; }
 <div id="app" class="mobile-frame">
 
 <header id="main-header" class="shadow-sm">
-  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.3.1</h1>
+  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.3.0</h1>
   <button id="info-btn" style="background-color:white; color:#ef4444; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:bold; border:none; cursor:pointer; flex-shrink:0; margin-left:8px;">読んでね</button>
 </header>
 
@@ -585,7 +592,7 @@ button { font-size: 14px !important; }
       </div>
     </div>
 
-    <div id="omikuji-trigger-area" class="my-6 py-2 select-none cursor-pointer text-gray-700 hover:text-gray-900 transition-colors">
+    <div id="omikuji-trigger-area" class="my-6 py-2 tap-trigger select-none cursor-pointer text-gray-700 hover:text-gray-900 transition-colors">
       <h3 class="font-bold text-xl flex items-center gap-2">
         <span id="omikuji-icon" class="inline-block text-2xl">🎫</span>
         <span class="flex-1">
@@ -624,7 +631,7 @@ button { font-size: 14px !important; }
 
     <!-- ランキング見出し ＋ メドレー切り替えトグル -->
     <div class="flex justify-between items-center mt-8 mb-4">
-      <h3 id="song-ranking-header" class="font-bold text-gray-700 text-xl cursor-pointer select-none">
+      <h3 id="song-ranking-header" class="font-bold text-gray-700 text-xl cursor-pointer select-none tap-trigger">
         <span id="song-ranking-icon" class="inline-block">🎸</span> 演奏回数ランキング
       </h3>
       <div class="flex items-center gap-2">
@@ -684,11 +691,11 @@ button { font-size: 14px !important; }
     <div id="last-songs" class="card-base bg-white p-2"></div></div>
   </div>
 
-  <!-- 軌跡（歴史）タブ：リニューアル -->
+  <!-- 軌跡（タイムライン）タブ：リニューアル -->
   <div id="tab-history" class="tab-content" style="display:none">
     <div class="mb-4 px-1">
       <h3 class="font-bold text-gray-700 text-xl">⏳ 1998年からの軌跡</h3>
-      <p class="text-gray-500 text-sm mt-1">ライブ、シングル、アルバムの歴史</p>
+      <p class="text-gray-500 text-sm mt-1">ライブ、シングル、アルバムのタイムライン</p>
     </div>
     
     <div class="history-grid-header flex text-[10px] font-bold text-gray-400 pb-1 mb-0">
@@ -756,9 +763,9 @@ button { font-size: 14px !important; }
       </ul>
       
       <!-- 最新のお知らせエリア（ここだけ表示する運用） -->
-      <h3 class="font-bold text-lg mb-3 text-aiko-red">🔔 最新のお知らせ (vol.3.1)</h3>
+      <h3 class="font-bold text-lg mb-3 text-aiko-red">🔔 最新のお知らせ (vol.3.0)</h3>
       <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-6 text-sm text-gray-600">
-        <p>「軌跡」タブをリニューアル！年表形式でツアーの期間やリリースの歴史が見やすくなりました。</p>
+        <p>「軌跡」タブ追加、「楽曲」タブでメドレーを含むか選択できるように。</p>
       </div>
 
       <h3 class="font-bold text-lg mb-3 text-aiko-red">▼その他</h3>
@@ -1004,7 +1011,7 @@ function initializeApp(data) {
 }
 
 // -----------------------------------------------------------
-// 軌跡（歴史）タブのロジック (Vol.3.1 リニューアル版)
+// 軌跡（タイムライン）タブのロジック (Vol.3.0 リニューアル版)
 // -----------------------------------------------------------
 function formatTourName(name) {
   if (!name) return "";
@@ -1239,47 +1246,82 @@ window.findAndShowLive = function(dateStr, tourName) {
 // -----------------------------------------------------------
 function setupRandomTriggers() {
   function createDoubleTapHandler(callback) {
-    let lastTap = 0;
-    return (e) => {
-      const currentTime = new Date().getTime();
-      const tapLength = currentTime - lastTap;
-      
-      // ダブルタップと判定する間隔 (ミリ秒)
-      if (tapLength < 500 && tapLength > 0) {
-        e.preventDefault();
-        e.stopPropagation();
+    let tapCount = 0;
+    let timer = null;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+
+    const reset = () => {
+        tapCount = 0;
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
+    };
+
+    const handler = (e) => {
+        // タッチ開始位置を記録
+        if (e.type === 'touchstart') {
+            lastTouchX = e.changedTouches[0].screenX;
+            lastTouchY = e.changedTouches[0].screenY;
+            return;
+        }
+
+        // タッチ終了時
+        if (e.type === 'touchend') {
+            const touch = e.changedTouches[0];
+            // 指が大きく動いていたら（スクロール）、タップとはみなさない
+            if (Math.abs(touch.screenX - lastTouchX) > 10 || Math.abs(touch.screenY - lastTouchY) > 10) {
+                reset();
+                return;
+            }
+        }
+
+        // ここまで来たら「タップ」とみなす
+        tapCount++;
         
-        // ターゲットにエフェクト付与
-        const target = e.currentTarget;
-        target.classList.remove('tap-highlight');
-        void target.offsetWidth; // リフロー強制
-        target.classList.add('tap-highlight');
-        
-        callback();
-        
-        // 連続発火を防ぐため、少し長めにインターバルを取る
-        lastTap = 0; 
-      } else {
-        lastTap = currentTime;
-      }
+        if (tapCount === 1) {
+            // 1回目のタップ：タイマー開始
+            timer = setTimeout(reset, 350); 
+        } else if (tapCount === 2) {
+            // 2回目のタップ：発火！
+            e.preventDefault(); // ズームなどを防止
+            reset(); // カウントリセット
+            
+            // エフェクト
+            const target = e.currentTarget;
+            target.classList.remove('tap-highlight');
+            void target.offsetWidth;
+            target.classList.add('tap-highlight');
+            
+            callback();
+        }
+    };
+
+    return {
+        touchstart: handler,
+        touchend: handler,
+        // PC用のダブルクリックは別途
+        dblclick: (e) => {
+            e.preventDefault();
+            callback();
+        }
     };
   }
 
+  // おみくじ（チケットアイコン）
   const omikujiArea = document.getElementById('omikuji-trigger-area');
   if (omikujiArea) {
-    omikujiArea.addEventListener('touchend', createDoubleTapHandler(() => {
-        playOmikuji();
-    }));
-    // PCでのダブルクリック対応
-    omikujiArea.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        playOmikuji();
-    });
+    const handlers = createDoubleTapHandler(() => { playOmikuji(); });
+    omikujiArea.addEventListener('touchstart', handlers.touchstart, {passive: false});
+    omikujiArea.addEventListener('touchend', handlers.touchend, {passive: false});
+    omikujiArea.addEventListener('dblclick', handlers.dblclick);
   }
 
+  // 演奏回数ランキング
   const songHeader = document.getElementById('song-ranking-header');
   if (songHeader) {
-    const handler = createDoubleTapHandler(() => {
+    const handlers = createDoubleTapHandler(() => {
         const icon = document.getElementById('song-ranking-icon');
         if (icon) {
             icon.classList.remove('spin-once');
@@ -1295,16 +1337,15 @@ function setupRandomTriggers() {
         }, 600);
     });
     
-    songHeader.addEventListener('touchend', handler);
-    songHeader.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        handler({ currentTarget: songHeader, preventDefault: () => {}, stopPropagation: () => {} });
-    });
+    songHeader.addEventListener('touchstart', handlers.touchstart, {passive: false});
+    songHeader.addEventListener('touchend', handlers.touchend, {passive: false});
+    songHeader.addEventListener('dblclick', handlers.dblclick);
   }
 
+  // 会場ランキング
   const venueHeader = document.getElementById('venue-tab-header');
   if (venueHeader) {
-    const handler = createDoubleTapHandler(() => {
+    const handlers = createDoubleTapHandler(() => {
         if (!venueHeader.classList.contains('active')) return;
         const venues = [];
         allLiveRecords.forEach(rec => {
@@ -1315,16 +1356,15 @@ function setupRandomTriggers() {
         const randomVenue = venues[Math.floor(Math.random() * venues.length)];
         selectVenue(randomVenue);
     });
-    venueHeader.addEventListener('touchend', handler);
-    venueHeader.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        handler({ currentTarget: venueHeader, preventDefault: () => {}, stopPropagation: () => {} });
-    });
+    venueHeader.addEventListener('touchstart', handlers.touchstart, {passive: false});
+    venueHeader.addEventListener('touchend', handlers.touchend, {passive: false});
+    venueHeader.addEventListener('dblclick', handlers.dblclick);
   }
 
+  // 都道府県ランキング
   const regionHeader = document.getElementById('region-tab-header');
   if (regionHeader) {
-     const handler = createDoubleTapHandler(() => {
+     const handlers = createDoubleTapHandler(() => {
         if (!regionHeader.classList.contains('active')) return;
         const regions = [];
         allLiveRecords.forEach(rec => {
@@ -1334,11 +1374,9 @@ function setupRandomTriggers() {
         const randomRegion = regions[Math.floor(Math.random() * regions.length)];
         selectRegion(randomRegion);
      });
-     regionHeader.addEventListener('touchend', handler);
-     regionHeader.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        handler({ currentTarget: regionHeader, preventDefault: () => {}, stopPropagation: () => {} });
-     });
+     regionHeader.addEventListener('touchstart', handlers.touchstart, {passive: false});
+     regionHeader.addEventListener('touchend', handlers.touchend, {passive: false});
+     regionHeader.addEventListener('dblclick', handlers.dblclick);
   }
 }
 
@@ -1833,6 +1871,16 @@ function applyFilters() {
     song: songFilterValue.toLowerCase(),
   };
 
+  // 入力された検索ワードが、いずれかのツアー名(または略称)と完全一致するかをチェック
+  const searchInputVal = document.getElementById('search-input').value.trim();
+  const searchLower = searchInputVal.toLowerCase();
+  
+  // 完全一致するツアーが存在するか？
+  const isExactTourMatch = searchInputVal && allLiveRecords.some(r => 
+    r.tourName.toLowerCase() === searchLower || 
+    (r.shortTourName && r.shortTourName.toString().toLowerCase() === searchLower)
+  );
+
   const filteredRecords = allLiveRecords.filter(rec => {
     const tourName = rec.tourName.toLowerCase();
     let tourMatch = true;
@@ -1842,7 +1890,27 @@ function applyFilters() {
     else if (filters.tour === 'other') tourMatch = !/love like (pop|rock|aloha)/.test(tourName);
 
     const songMatch = !filters.song || rec.setlist.some(s => s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim().toLowerCase() === filters.song);
-    const searchMatch = !filters.search || (rec.tourName + ' ' + rec.date + ' ' + rec.venue + ' ' + rec.region).toLowerCase().includes(filters.search);
+    
+    // フリーワード検索ロジック
+    let searchMatch = true;
+    if (filters.search) {
+        if (isExactTourMatch) {
+            // 完全一致モード: 入力された文字と完全に一致するツアー名（または略称）を持つレコードのみヒットさせる
+            const nameMatch = rec.tourName.toLowerCase() === filters.search;
+            const shortNameMatch = rec.shortTourName && rec.shortTourName.toString().toLowerCase() === filters.search;
+            searchMatch = nameMatch || shortNameMatch;
+        } else {
+            // 通常モード: 部分一致 (ツアー名、略称、日付、会場、地域)
+            const targets = [
+                rec.tourName,
+                rec.shortTourName || '',
+                rec.date,
+                rec.venue,
+                rec.region
+            ].join(' ').toLowerCase();
+            searchMatch = targets.includes(filters.search);
+        }
+    }
 
     return tourMatch && songMatch && searchMatch &&
       (!filters.year || rec.year == filters.year) &&
