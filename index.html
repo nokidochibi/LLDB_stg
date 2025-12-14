@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Love Like DataBase vol.2.2</title>
+<title>Love Like DataBase vol.3.0</title>
 <meta name="theme-color" content="#ef4444">
 
 <!-- ホーム画面に追加したときの設定 -->
@@ -250,6 +250,110 @@ nav > div {
   padding-bottom: 4px;
 }
 
+/* 歴史タブ（タイムライン）用スタイル */
+.history-container {
+  position: relative;
+  padding: 10px 0;
+}
+.history-line-bg {
+  position: absolute;
+  left: 63px; /* ドットの中心に合わせる */
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background: #e5e7eb;
+  z-index: 0;
+}
+.history-item {
+  display: flex;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+  align-items: flex-start;
+}
+.history-date-col {
+  width: 50px;
+  text-align: right;
+  padding-right: 8px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+.history-year {
+  font-size: 13px;
+  font-weight: bold;
+  color: #374151;
+  line-height: 1;
+}
+.history-date {
+  font-size: 10px;
+  color: #9CA3AF;
+  margin-top: 2px;
+}
+.history-marker-col {
+  width: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 10px;
+  flex-shrink: 0;
+  padding-top: 6px;
+}
+.history-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  background-color: #d1d5db; /* Default */
+}
+.history-dot.live { background-color: var(--aiko-red); }
+.history-dot.single { background-color: var(--aiko-blue); }
+.history-dot.album { background-color: var(--aiko-yellow); }
+
+.history-content-col {
+  flex: 1;
+  min-width: 0;
+  padding-top: 0;
+}
+.history-card {
+  background: white;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #f3f4f6;
+  transition: transform 0.2s;
+}
+.history-card:active {
+  transform: scale(0.98);
+}
+.history-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 4px;
+}
+.history-tag.live { background-color: var(--aiko-red); }
+.history-tag.single { background-color: var(--aiko-blue); }
+.history-tag.album { background-color: var(--aiko-yellow); color: #374151; }
+
+.history-title {
+  font-weight: bold;
+  font-size: 15px;
+  color: #1f2937;
+  line-height: 1.4;
+}
+.history-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
 header {
   background-color: var(--aiko-red) !important;
   color: white !important;
@@ -402,13 +506,14 @@ button { font-size: 14px !important; }
 <div id="app" class="mobile-frame">
 
 <header id="main-header" class="shadow-sm">
-  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.2.2</h1>
+  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.3.0</h1>
   <button id="info-btn" style="background-color:white; color:#ef4444; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:bold; border:none; cursor:pointer; flex-shrink:0; margin-left:8px;">読んでね</button>
 </header>
 
 <main id="main-content" style="opacity: 0; transition: opacity 0.5s;">
   <div id="live-detail" style="display:none"></div>
 
+  <!-- 公演タブ -->
   <div id="tab-search" class="tab-content" style="display:block">
     <p class="text-gray-500 mb-4 text-sm text-right">※<span id="last-update-date">-</span>までの情報を掲載</p>
     <div class="card-base bg-gray-50 border border-gray-200">
@@ -430,7 +535,6 @@ button { font-size: 14px !important; }
       </div>
     </div>
 
-    <!-- おみくじトリガー範囲拡大 -->
     <div id="omikuji-trigger-area" class="my-6 py-2 select-none cursor-pointer text-gray-700 hover:text-gray-900 transition-colors">
       <h3 class="font-bold text-xl flex items-center gap-2">
         <span id="omikuji-icon" class="inline-block text-2xl">🎫</span>
@@ -444,6 +548,7 @@ button { font-size: 14px !important; }
     <div id="live-list-container" class="space-y-4"></div>
   </div>
 
+  <!-- 楽曲タブ -->
   <div id="tab-song" class="tab-content" style="display:none">
     <div class="mb-8">
       <h3 class="font-bold mb-3 text-gray-700 text-xl">📊 年別ライブ開催・楽曲演奏回数</h3>
@@ -469,7 +574,9 @@ button { font-size: 14px !important; }
 
     <!-- ランキング見出し ＋ メドレー切り替えトグル -->
     <div class="flex justify-between items-center mt-8 mb-4">
-      <h3 id="song-ranking-header" class="font-bold text-gray-700 text-xl cursor-pointer select-none">🎸 演奏回数ランキング</h3>
+      <h3 id="song-ranking-header" class="font-bold text-gray-700 text-xl cursor-pointer select-none">
+        <span id="song-ranking-icon" class="inline-block">🎸</span> 演奏回数ランキング
+      </h3>
       <div class="flex items-center gap-2">
         <span class="text-xs font-bold text-gray-500">メドレー<br>込み</span>
         <div class="relative inline-block align-middle select-none">
@@ -482,26 +589,26 @@ button { font-size: 14px !important; }
     <div id="song-ranking-container"></div>
   </div>
 
-  <div id="tab-pattern" class="tab-content" style="display:none">
-    <div class="mb-8">
-      <h3 class="font-bold mb-3 text-gray-700 text-xl">📊 アルバム別演奏回数</h3>
-      <div class="card-base bg-white p-3">
-        <canvas id="album-chart" style="height:350px; max-height:350px"></canvas>
+  <!-- 軌跡（歴史）タブ：新規追加 -->
+  <div id="tab-history" class="tab-content" style="display:none">
+    <div class="mb-4 px-1">
+      <h3 class="font-bold text-gray-700 text-xl">⏳ 1998年からの軌跡</h3>
+      <p class="text-gray-500 text-sm mt-1">ライブ、シングル、アルバムの歴史</p>
+    </div>
+    
+    <div class="history-container">
+      <div class="history-line-bg"></div>
+      <div id="history-list-container">
+        <!-- JSで生成 -->
       </div>
     </div>
-
-    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🕰️ 最近演奏されていない曲 TOP 10</h3>
-    <p class="text-gray-500 mb-3 text-center text-sm">※過去に1度でも演奏された曲が対象だよ</p>
-    <div id="not-played-recently-songs" class="card-base bg-white p-2"></div></div>
-
-    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🎬 オープニング曲 TOP 10</h3>
-    <div id="opening-songs" class="card-base bg-white p-2"></div></div>
-    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">👏 アンコール曲 TOP 10</h3>
-    <div id="encore-songs" class="card-base bg-white p-2"></div></div>
-    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🏁 大トリ曲 TOP 10</h3>
-    <div id="last-songs" class="card-base bg-white p-2"></div></div>
+    
+    <div class="text-center mt-8 mb-4 text-gray-400 text-sm">
+      <p>〜 現在 〜</p>
+    </div>
   </div>
 
+  <!-- 場所タブ -->
   <div id="tab-venue" class="tab-content" style="display:none">
     <div class="mb-8">
       <h3 class="font-bold mb-3 text-gray-700 text-xl">📊 年別ライブ開催回数</h3>
@@ -524,6 +631,28 @@ button { font-size: 14px !important; }
     <div id="venue-ranking-container" class="mt-4"></div>
     <div id="region-ranking-container" class="mt-4" style="display:none"></div>
   </div>
+  
+  <!-- 傾向タブ -->
+  <div id="tab-pattern" class="tab-content" style="display:none">
+    <div class="mb-8">
+      <h3 class="font-bold mb-3 text-gray-700 text-xl">📊 アルバム別演奏回数</h3>
+      <div class="card-base bg-white p-3">
+        <canvas id="album-chart" style="height:350px; max-height:350px"></canvas>
+      </div>
+    </div>
+
+    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🕰️ 最近演奏されていない曲 TOP 10</h3>
+    <p class="text-gray-500 mb-3 text-center text-sm">※過去に1度でも演奏された曲が対象だよ</p>
+    <div id="not-played-recently-songs" class="card-base bg-white p-2"></div></div>
+
+    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🎬 オープニング曲 TOP 10</h3>
+    <div id="opening-songs" class="card-base bg-white p-2"></div></div>
+    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">👏 アンコール曲 TOP 10</h3>
+    <div id="encore-songs" class="card-base bg-white p-2"></div></div>
+    <div class="mb-8"><h3 class="font-bold mb-3 text-gray-700 text-xl">🏁 大トリ曲 TOP 10</h3>
+    <div id="last-songs" class="card-base bg-white p-2"></div></div>
+  </div>
+
 </main>
 
 <div id="loading-container" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0f172a; z-index:9000; display:flex; align-items:center; justify-content:center;">
@@ -574,9 +703,9 @@ button { font-size: 14px !important; }
       </ul>
       
       <!-- 最新のお知らせエリア（ここだけ表示する運用） -->
-      <h3 class="font-bold text-lg mb-3 text-aiko-red">🔔 最新のお知らせ (vol.2.2)</h3>
+      <h3 class="font-bold text-lg mb-3 text-aiko-red">🔔 最新のお知らせ (vol.3.0)</h3>
       <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-6 text-sm text-gray-600">
-        <p>ランダム機能の範囲拡大、演奏回数ランキングのメドレー有無切り替え機能追加、内部データのアップデートなど</p>
+        <p>「軌跡」タブを追加！1998年からのライブ、リリース情報を年表形式で見られるようになりました。</p>
       </div>
 
       <h3 class="font-bold text-lg mb-3 text-aiko-red">▼その他</h3>
@@ -600,6 +729,10 @@ button { font-size: 14px !important; }
       <i data-lucide="map-pin" style="width:26px;height:26px"></i>
       <span class="text-[11px] font-bold">場所</span>
     </a>
+    <a href="#" class="tab-item" data-tab="history">
+      <i data-lucide="footprints" style="width:26px;height:26px"></i>
+      <span class="text-[11px] font-bold">軌跡</span>
+    </a>
     <a href="#" class="tab-item" data-tab="pattern">
       <i data-lucide="shuffle" style="width:26px;height:26px"></i>
       <span class="text-[11px] font-bold">傾向</span>
@@ -613,7 +746,7 @@ button { font-size: 14px !important; }
 // GASのAPIエンドポイント
 const API_URL = "https://script.google.com/macros/s/AKfycbzmH5dDDdgd1pbxmtFWnjK7eo2Kgv4BBeBBUDcYzXdrFXVQl2KmPH8mNXyLsFMHWoWz/exec";
 // キャッシュキー (ここを変更して強制更新させる)
-const CACHE_KEY = 'lldb_data_v3_8'; // Vol.2.2用に更新
+const CACHE_KEY = 'lldb_data_v3_9'; // Vol.3.0用に更新
 
 // アプリの初期化Promise
 let appInitializedResolver;
@@ -758,6 +891,9 @@ function initializeApp(records, albums, songs) {
   analyzeLastPlayed(records);
   populateFilters(records);
   
+  // 歴史タブのレンダリング
+  renderHistoryTab();
+
   if (!document.getElementById('search-input').hasAttribute('data-listener-attached')) {
     setupEventListeners();
     document.getElementById('search-input').setAttribute('data-listener-attached', 'true');
@@ -774,6 +910,142 @@ function initializeApp(records, albums, songs) {
   renderLastPlayedRanking();
   renderVenueRanking();
   renderVenueLiveCountChart();
+}
+
+// -----------------------------------------------------------
+// 軌跡（歴史）タブのロジック
+// -----------------------------------------------------------
+function renderHistoryTab() {
+    const container = document.getElementById('history-list-container');
+    if (!container) return;
+
+    // 1. 全データを単一のイベントリストに変換
+    let events = [];
+
+    // ライブ記録
+    allLiveRecords.forEach(rec => {
+        if (!rec.date) return;
+        events.push({
+            type: 'live',
+            date: new Date(rec.date),
+            title: rec.tourName,
+            subTitle: `${rec.venue} (${rec.region})`,
+            data: rec // 詳細表示用
+        });
+    });
+
+    // シングル（表題曲）
+    if (songData) {
+        Object.entries(songData).forEach(([name, info]) => {
+            if (info.type === '表題曲' && info.releaseDate) {
+                events.push({
+                    type: 'single',
+                    date: new Date(info.releaseDate),
+                    title: name,
+                    subTitle: 'Single Release',
+                    data: null
+                });
+            }
+        });
+    }
+
+    // アルバム
+    if (albumData) {
+        albumData.forEach(album => {
+            if (album.releaseDate) {
+                events.push({
+                    type: 'album',
+                    date: new Date(album.releaseDate),
+                    title: album.albumName,
+                    subTitle: 'Album Release',
+                    data: null
+                });
+            }
+        });
+    }
+
+    // 2. 日付の古い順（昇順）にソート
+    events.sort((a, b) => a.date - b.date);
+
+    // 3. HTML生成
+    let html = '';
+    let lastYear = null;
+
+    events.forEach(event => {
+        const year = event.date.getFullYear();
+        const month = ('0' + (event.date.getMonth() + 1)).slice(-2);
+        const day = ('0' + event.date.getDate()).slice(-2);
+        
+        // 年が変わったら年表示、そうでなければ空文字
+        const yearDisplay = (year !== lastYear) ? year : '';
+        lastYear = year;
+
+        let dotClass = '';
+        let tagText = '';
+        let tagClass = '';
+        let onClickAttr = '';
+
+        if (event.type === 'live') {
+            dotClass = 'live';
+            tagText = 'LIVE';
+            tagClass = 'live';
+            // ライブの場合はクリックで詳細へ飛ぶ（関数呼び出しはstringで渡す必要があるため注意）
+            // JSON.stringifyだとクォートのエスケープが面倒なので、ID検索などにするのが安全だが、
+            // ここでは簡易的に allLiveRecords から検索するロジックを埋め込む
+            const safeTourName = event.title.replace(/'/g, "\\'");
+            const safeDate = `${year}/${month}/${day}`; // フォーマット一致前提
+            // clickイベントは別途設定するか、シンプルに検索へ飛ばす
+            onClickAttr = `onclick="findAndShowLive('${safeDate}', '${safeTourName}')"`;
+        } else if (event.type === 'single') {
+            dotClass = 'single';
+            tagText = 'SINGLE';
+            tagClass = 'single';
+        } else if (event.type === 'album') {
+            dotClass = 'album';
+            tagText = 'ALBUM';
+            tagClass = 'album';
+        }
+
+        html += `
+        <div class="history-item">
+            <div class="history-date-col">
+                <div class="history-year">${yearDisplay}</div>
+                <div class="history-date">${month}/${day}</div>
+            </div>
+            <div class="history-marker-col">
+                <div class="history-dot ${dotClass}"></div>
+            </div>
+            <div class="history-content-col">
+                <div class="history-card ${event.type === 'live' ? 'cursor-pointer' : ''}" ${onClickAttr}>
+                    <span class="history-tag ${tagClass}">${tagText}</span>
+                    <div class="history-title">${event.title}</div>
+                    <div class="history-sub">${event.subTitle}</div>
+                </div>
+            </div>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// 歴史タブからライブ詳細へ飛ぶためのヘルパー
+window.findAndShowLive = function(dateStr, tourName) {
+    const rec = allLiveRecords.find(r => r.tourName === tourName); 
+    // 日付判定を緩くする（同じツアーならOKとするか、厳密にするか。ここではツアー名でヒットした最初のものを表示してみる、もしくは検索タブへ）
+    // 厳密にやるなら dateStr と比較したいが、GASからの dateStr とフォーマットが合うか微妙。
+    // ここでは「ツアー名」で検索して、そのツアーのリストを表示する挙動にするのが自然かも。
+    
+    // 検索タブへ移動してフィルタリング
+    document.getElementById('search-input').value = tourName;
+    // 他のフィルタクリア
+    document.getElementById('tour-select').value = '';
+    document.getElementById('year-select').value = '';
+    document.getElementById('region-select').value = '';
+    document.getElementById('song-filter-input').value = '';
+    
+    switchToTab('search');
+    applyFilters();
 }
 
 // -----------------------------------------------------------
@@ -816,12 +1088,24 @@ function setupRandomTriggers() {
   const songHeader = document.getElementById('song-ranking-header');
   if (songHeader) {
     songHeader.addEventListener('click', createDoubleTapHandler(() => {
+        // 回転アニメーション
+        const icon = document.getElementById('song-ranking-icon');
+        if (icon) {
+            icon.classList.remove('spin-once');
+            void icon.offsetWidth; // リフロー
+            icon.classList.add('spin-once');
+        }
+
         const songs = Object.keys(songStats);
         if (songs.length === 0) return;
         const randomSong = songs[Math.floor(Math.random() * songs.length)];
-        selectSong(randomSong);
-        // スクロール位置を調整
-        document.getElementById('song-ranking-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // 少し遅延させて結果を表示（回転を見せるため）
+        setTimeout(() => {
+            selectSong(randomSong);
+            // スクロール位置を調整
+            document.getElementById('song-ranking-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 600);
     }));
   }
 
@@ -1579,13 +1863,32 @@ function copySetlist() {
   if (!currentDisplayingRecord) return;
   if (!confirm('セットリストをコピーしますか？')) return;
 
-  const text = currentDisplayingRecord.setlist
-    .filter(s => s !== '__MEDLEY_START__' && s !== '__MEDLEY_END__')
-    .map((s, i) => {
-        const cleanName = s.replace(/_アンコール(?: #\d+)?/g, '').trim();
-        return `${i + 1}. ${cleanName}`;
-    })
-    .join('\n');
+  let text = '';
+  // Setlist formatter logic for copy
+  let songNum = 1;
+  let medleyNum = 1;
+  let inMedley = false;
+  
+  currentDisplayingRecord.setlist.forEach((s) => {
+    if (s === '__MEDLEY_START__') {
+        text += `${songNum++}. メドレー\n`;
+        inMedley = true;
+        medleyNum = 1;
+        return;
+    }
+    if (s === '__MEDLEY_END__') {
+        inMedley = false;
+        return;
+    }
+
+    const cleanName = s.replace(/_アンコール(?: #\d+)?/g, '').trim();
+    
+    if (inMedley) {
+        text += `  (${medleyNum++}) ${cleanName}\n`;
+    } else {
+        text += `${songNum++}. ${cleanName}\n`;
+    }
+  });
     
   navigator.clipboard.writeText(text).then(() => {
       alert('コピーしました！');
