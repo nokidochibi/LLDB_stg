@@ -292,16 +292,40 @@ button { font-size: 14px !important; }
   margin-bottom: -3px; transition: all 0.2s; background: white; }
 .venue-tab.active { color: var(--aiko-pink); border-bottom-color: var(--aiko-pink); }
 
-/* トグルスイッチ用スタイル */
-.toggle-checkbox:checked {
-  right: 0;
-  border-color: var(--aiko-pink);
+/* トグルスイッチ用スタイル（修正版） */
+.toggle-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-label {
+  width: 48px;
+  height: 24px;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: block;
+}
+.toggle-label:before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 .toggle-checkbox:checked + .toggle-label {
   background-color: var(--aiko-pink);
 }
 .toggle-checkbox:checked + .toggle-label:before {
-  transform: translateX(100%);
+  transform: translateX(24px);
 }
 
 .back-button-circle {
@@ -448,9 +472,9 @@ button { font-size: 14px !important; }
       <h3 id="song-ranking-header" class="font-bold text-gray-700 text-xl cursor-pointer select-none">🎸 演奏回数ランキング</h3>
       <div class="flex items-center gap-2">
         <span class="text-xs font-bold text-gray-500">メドレー<br>込み</span>
-        <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
-            <input type="checkbox" name="toggle" id="medley-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer pointer-events-auto transition-all duration-300 left-0" checked style="border-color: #E5E7EB; top:0; z-index:10;"/>
-            <label for="medley-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer transition-colors duration-300"></label>
+        <div class="relative inline-block align-middle select-none">
+            <input type="checkbox" name="toggle" id="medley-toggle" class="toggle-checkbox" checked/>
+            <label for="medley-toggle" class="toggle-label"></label>
         </div>
       </div>
     </div>
@@ -539,6 +563,7 @@ button { font-size: 14px !important; }
         <li>『より道』『相合傘』などバージョン違いがあるものも、１つの曲として統合しているよ。</li>
         <li>「メドレー」は複数の曲をまとめて１曲として扱っているよ。</li>
         <li>即興曲などは含んでいないよ。</li>
+        <li><span class="font-bold text-aiko-red">「傾向」タブの集計（オープニング、大トリなど）では、メドレー内の曲は対象外としているよ。</span></li>
         <li>会場は、同じ建物で名称が変わったものは「旧名称 / 新名称」としているよ。同じ場所でも建て替えた新しい建物の場合は、別の会場としているよ。</li>
       </ul>
       <h3 class="font-bold text-lg mb-3 text-aiko-red">▼操作</h3>
@@ -586,7 +611,7 @@ button { font-size: 14px !important; }
 
 <script>
 // GASのAPIエンドポイント
-const API_URL = "https://script.google.com/macros/s/AKfycbxDCVXoHkQcs1FjMc5o9wA7KyjwQM5OnDweXEaee-tMb_AeGncibSHU4BEazCDmEBT1dA/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzmH5dDDdgd1pbxmtFWnjK7eo2Kgv4BBeBBUDcYzXdrFXVQl2KmPH8mNXyLsFMHWoWz/exec";
 // キャッシュキー (ここを変更して強制更新させる)
 const CACHE_KEY = 'lldb_data_v3_8'; // Vol.2.2用に更新
 
@@ -1169,8 +1194,11 @@ function analyzeSongStats(records) {
   // 楽曲データにある全曲を0回で初期化
   if (songData) {
     Object.keys(songData).forEach(songName => {
-      songStats[songName] = 0;
-      songStatsNoMedley[songName] = 0;
+      // カギカッコ付き（カバー曲など）は初期化もしない（除外）
+      if (!songName.includes('[') && !songName.includes(']')) {
+          songStats[songName] = 0;
+          songStatsNoMedley[songName] = 0;
+      }
     });
   }
 
@@ -1181,7 +1209,9 @@ function analyzeSongStats(records) {
       if (s === '__MEDLEY_END__') { inMedley = false; return; }
 
       const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
-      if (clean && clean !== 'メドレー') {
+      
+      // 除外判定: メドレー文字、または [] を含む曲
+      if (clean && clean !== 'メドレー' && !clean.includes('[') && !clean.includes(']')) {
         // 全集計（メドレー込み）
         songStats[clean] = (songStats[clean] || 0) + 1;
         // メドレー除外集計
@@ -1196,14 +1226,41 @@ function analyzeSongStats(records) {
 function analyzePatterns(records) {
   const o = {}, e = {}, l = {};
   records.forEach(rec => {
-    const cleanSetlist = rec.setlist.filter(s => !s.startsWith('__MEDLEY_')).map(s => s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim());
-    if (cleanSetlist.length > 0 && cleanSetlist[0] && cleanSetlist[0] !== 'メドレー') o[cleanSetlist[0]] = (o[cleanSetlist[0]] || 0) + 1;
-    if (cleanSetlist.length > 0 && cleanSetlist[cleanSetlist.length - 1] && cleanSetlist[cleanSetlist.length-1] !== 'メドレー') l[cleanSetlist[cleanSetlist.length-1]] = (l[cleanSetlist[cleanSetlist.length-1]] || 0) + 1;
+    // メドレー区間を完全に除外してリストを作成する
+    const cleanSetlist = [];
+    let inMedley = false;
+    
     rec.setlist.forEach(s => {
-      if (s.includes('_アンコール')) {
+        if (s === '__MEDLEY_START__') { inMedley = true; return; }
+        if (s === '__MEDLEY_END__') { inMedley = false; return; }
+        
+        if (inMedley) return; // メドレー中は無視
+
         const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
-        if (clean && clean !== 'メドレー') e[clean] = (e[clean] || 0) + 1;
-      }
+        // 除外判定: メドレー文字、または [] を含む曲
+        if (clean && clean !== 'メドレー' && !clean.includes('[') && !clean.includes(']')) {
+            cleanSetlist.push(clean);
+        }
+    });
+
+    if (cleanSetlist.length > 0) {
+        o[cleanSetlist[0]] = (o[cleanSetlist[0]] || 0) + 1;
+        l[cleanSetlist[cleanSetlist.length - 1]] = (l[cleanSetlist[cleanSetlist.length - 1]] || 0) + 1;
+    }
+
+    // アンコール集計（ここもメドレー内アンコールは除外）
+    let inMedleyForEncore = false;
+    rec.setlist.forEach(s => {
+        if (s === '__MEDLEY_START__') { inMedleyForEncore = true; return; }
+        if (s === '__MEDLEY_END__') { inMedleyForEncore = false; return; }
+        if (inMedleyForEncore) return;
+        
+        if (s.includes('_アンコール')) {
+            const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
+            if (clean && clean !== 'メドレー' && !clean.includes('[') && !clean.includes(']')) {
+                e[clean] = (e[clean] || 0) + 1;
+            }
+        }
     });
   });
   patternStats = { openingSongs: o, encoreSongs: e, lastSongs: l };
@@ -1219,6 +1276,8 @@ function analyzeLastPlayed(records) {
       
       const cleanName = s.replace(/_アンコール(?: #\d+)?/g, '').trim();
       if (!cleanName) return;
+      // カギカッコ付きを除外
+      if (cleanName.includes('[') || cleanName.includes(']')) return;
       if (!songData[cleanName]) return;
 
       if (!lastPlayedStats[cleanName] || recDate > lastPlayedStats[cleanName].dateObj) {
