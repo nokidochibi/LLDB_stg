@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Love Like DataBase vol.2.1</title>
+<title>Love Like DataBase vol.2.2</title>
 <meta name="theme-color" content="#ef4444">
 
 <!-- ホーム画面に追加したときの設定 -->
@@ -114,7 +114,7 @@ nav > div {
 .tab-item.active { color: white; background-color: #4B5563; }
 .tab-item.active i { color: white; }
 
-/* セトリリストのスタイル修正: 余白を狭くして一覧性を向上 */
+/* セトリリストのスタイル修正 */
 .setlist-item {
   padding: 3px 0;
   margin-bottom: 0;
@@ -129,7 +129,6 @@ nav > div {
 }
 .setlist-item:last-child { border-bottom: none; }
 
-/* レイアウト調整 */
 .setlist-left-content {
   display: flex;
   align-items: baseline;
@@ -182,7 +181,6 @@ nav > div {
   z-index: 10;
   transition: transform 0.1s;
 }
-/* タップ時の年表示吹き出し */
 .year-tooltip {
   position: absolute;
   bottom: 18px;
@@ -294,6 +292,18 @@ button { font-size: 14px !important; }
   margin-bottom: -3px; transition: all 0.2s; background: white; }
 .venue-tab.active { color: var(--aiko-pink); border-bottom-color: var(--aiko-pink); }
 
+/* トグルスイッチ用スタイル */
+.toggle-checkbox:checked {
+  right: 0;
+  border-color: var(--aiko-pink);
+}
+.toggle-checkbox:checked + .toggle-label {
+  background-color: var(--aiko-pink);
+}
+.toggle-checkbox:checked + .toggle-label:before {
+  transform: translateX(100%);
+}
+
 .back-button-circle {
   width: 50px; height: 50px; border-radius: 50%; background-color: rgba(255, 255, 255, 0.95);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
@@ -349,6 +359,16 @@ button { font-size: 14px !important; }
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* ダルブルタップ用エフェクト */
+.tap-highlight {
+    animation: highlight 0.3s ease-out;
+}
+@keyframes highlight {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); color: var(--aiko-pink); }
+    100% { transform: scale(1); }
+}
 </style>
 </head>
 <body>
@@ -358,7 +378,7 @@ button { font-size: 14px !important; }
 <div id="app" class="mobile-frame">
 
 <header id="main-header" class="shadow-sm">
-  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.2.1</h1>
+  <h1 class="font-bold text-left" style="font-size:22px; color:white; flex:1;">Love Like DataBase vol.2.2</h1>
   <button id="info-btn" style="background-color:white; color:#ef4444; padding:8px 14px; border-radius:8px; font-size:13px; font-weight:bold; border:none; cursor:pointer; flex-shrink:0; margin-left:8px;">読んでね</button>
 </header>
 
@@ -386,12 +406,16 @@ button { font-size: 14px !important; }
       </div>
     </div>
 
-    <!-- おみくじトリガーのh3 -->
-    <h3 class="font-bold my-6 text-gray-700 text-xl select-none" id="omikuji-header">
-      <span id="omikuji-trigger" class="inline-block cursor-pointer">🎫</span>
-      <span id="display-count-text">表示中の公演数</span>: 
-      <span id="display-count">0</span> / <span id="total-count">0</span>
-    </h3>
+    <!-- おみくじトリガー範囲拡大 -->
+    <div id="omikuji-trigger-area" class="my-6 py-2 select-none cursor-pointer text-gray-700 hover:text-gray-900 transition-colors">
+      <h3 class="font-bold text-xl flex items-center gap-2">
+        <span id="omikuji-icon" class="inline-block text-2xl">🎫</span>
+        <span class="flex-1">
+          <span id="display-count-text">表示中の公演数</span>: 
+          <span id="display-count">0</span> / <span id="total-count">0</span>
+        </span>
+      </h3>
+    </div>
 
     <div id="live-list-container" class="space-y-4"></div>
   </div>
@@ -418,7 +442,19 @@ button { font-size: 14px !important; }
         </select>
       </div>
     </div>
-    <h3 class="font-bold mt-8 mb-4 text-gray-700 text-xl">🎸 演奏回数ランキング</h3>
+
+    <!-- ランキング見出し ＋ メドレー切り替えトグル -->
+    <div class="flex justify-between items-center mt-8 mb-4">
+      <h3 id="song-ranking-header" class="font-bold text-gray-700 text-xl cursor-pointer select-none">🎸 演奏回数ランキング</h3>
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-gray-500">メドレー<br>込み</span>
+        <div class="relative inline-block w-12 h-6 align-middle select-none transition duration-200 ease-in">
+            <input type="checkbox" name="toggle" id="medley-toggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer pointer-events-auto transition-all duration-300 left-0" checked style="border-color: #E5E7EB; top:0; z-index:10;"/>
+            <label for="medley-toggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-200 cursor-pointer transition-colors duration-300"></label>
+        </div>
+      </div>
+    </div>
+    
     <div id="song-ranking-container"></div>
   </div>
 
@@ -458,8 +494,8 @@ button { font-size: 14px !important; }
       </div>
     </div>
     <div class="venue-tabs">
-      <div class="venue-tab active" data-venue-tab="venue">会場ランキング</div>
-      <div class="venue-tab" data-venue-tab="region">都道府県ランキング</div>
+      <div class="venue-tab active" data-venue-tab="venue" id="venue-tab-header">会場ランキング</div>
+      <div class="venue-tab" data-venue-tab="region" id="region-tab-header">都道府県ランキング</div>
     </div>
     <div id="venue-ranking-container" class="mt-4"></div>
     <div id="region-ranking-container" class="mt-4" style="display:none"></div>
@@ -508,14 +544,14 @@ button { font-size: 14px !important; }
       <h3 class="font-bold text-lg mb-3 text-aiko-red">▼操作</h3>
       <ul class="list-disc pl-5 mb-6 space-y-2">
         <li>セトリのページの左上に「←（戻る）」ボタンがあるけど、ライブ名をタップしても前のページに戻るよ。右手でも押しやすいね。</li>
-        <li>「表示中の公演数」の前の「🎫」を3回タップすると...？</li>
+        <li>どこかの「見出し」をダブルタップすると、何かがランダムに表示されるよ。</li>
         <li>セトリ画面の「🎵 セットリスト」をタップすると、テキストとしてコピーできるよ。</li>
       </ul>
       
       <!-- 最新のお知らせエリア（ここだけ表示する運用） -->
-      <h3 class="font-bold text-lg mb-3 text-aiko-red">🔔 最新のお知らせ (vol.2.1)</h3>
+      <h3 class="font-bold text-lg mb-3 text-aiko-red">🔔 最新のお知らせ (vol.2.2)</h3>
       <div class="bg-gray-50 p-3 rounded-lg border border-gray-100 mb-6 text-sm text-gray-600">
-        <p>セトリ画面の余白調整、セトリのコピー機能追加、アイコン変更、グラフへの数値表示などを行いました。</p>
+        <p>ランダム機能の範囲拡大、演奏回数ランキングのメドレー有無切り替え機能追加、内部データのアップデートなど</p>
       </div>
 
       <h3 class="font-bold text-lg mb-3 text-aiko-red">▼その他</h3>
@@ -535,7 +571,6 @@ button { font-size: 14px !important; }
       <i data-lucide="music" style="width:26px;height:26px"></i>
       <span class="text-[11px] font-bold">楽曲</span>
     </a>
-    <!-- 場所タブを傾向タブの前に移動 -->
     <a href="#" class="tab-item" data-tab="venue">
       <i data-lucide="map-pin" style="width:26px;height:26px"></i>
       <span class="text-[11px] font-bold">場所</span>
@@ -551,9 +586,9 @@ button { font-size: 14px !important; }
 
 <script>
 // GASのAPIエンドポイント
-const API_URL = "https://script.google.com/macros/s/AKfycbzmH5dDDdgd1pbxmtFWnjK7eo2Kgv4BBeBBUDcYzXdrFXVQl2KmPH8mNXyLsFMHWoWz/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxDCVXoHkQcs1FjMc5o9wA7KyjwQM5OnDweXEaee-tMb_AeGncibSHU4BEazCDmEBT1dA/exec";
 // キャッシュキー (ここを変更して強制更新させる)
-const CACHE_KEY = 'lldb_data_v3_6';
+const CACHE_KEY = 'lldb_data_v3_8'; // Vol.2.2用に更新
 
 // アプリの初期化Promise
 let appInitializedResolver;
@@ -570,8 +605,8 @@ const animationFinishedPromise = new Promise(resolve => {
 document.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons();
   
-  // おみくじ機能のセットアップ
-  setupOmikuji();
+  // ダブルタップなどのイベント設定
+  setupRandomTriggers();
 
   // 1. キャッシュがあれば即表示
   const cachedData = localStorage.getItem(CACHE_KEY);
@@ -581,9 +616,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const parsed = JSON.parse(cachedData);
       if (parsed.liveRecords && parsed.liveRecords.length > 0) {
-        // キャッシュデータで初期化 (songDataも渡す)
         initializeApp(parsed.liveRecords, parsed.albumData, parsed.songData);
-        appInitializedResolver(); // データ準備完了
+        appInitializedResolver(); 
         isCachedLoaded = true;
       }
     } catch (e) {
@@ -591,21 +625,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 2. ローディング演出の開始（キャッシュ有無でモード分岐）
+  // 2. ローディング演出
   startLoadingAnimation(isCachedLoaded ? 'fast' : 'normal');
 
-  // 3. 裏で最新データを取得して更新（Stale-While-Revalidate）
+  // 3. 最新データ取得
   loadAllData(isCachedLoaded);
 
-  // 両方終わったら画面遷移
   Promise.all([appInitializedPromise, animationFinishedPromise]).then(() => {
     finishLoading();
   });
 });
 
-let allLiveRecords = [], songStats = {}, patternStats = {}, lastPlayedStats = {}, albumData = [], songData = {}, chartInstances = {};
+let allLiveRecords = [], 
+    songStats = {},            // メドレー込み（デフォルト）
+    songStatsNoMedley = {},    // メドレー除外（フル尺のみ）
+    patternStats = {}, 
+    lastPlayedStats = {}, 
+    albumData = [], 
+    songData = {}, 
+    chartInstances = {};
 let selectedVenueInfo = null;
-let currentDisplayingRecord = null; // 現在表示中のセトリデータを保持
+let currentDisplayingRecord = null;
 
 // 一括データ取得＆キャッシュ更新
 async function loadAllData(isAlreadyDisplayed) {
@@ -614,19 +654,13 @@ async function loadAllData(isAlreadyDisplayed) {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
-    // データをキャッシュに保存
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-
-    // 最新データで初期化
     initializeApp(data.liveRecords, data.albumData, data.songData);
 
-    // まだ表示されていなければ（キャッシュなしの場合）、ここで準備完了とする
     if (!isAlreadyDisplayed) {
       appInitializedResolver();
     }
-
   } catch (error) {
-    // キャッシュもない、通信も失敗した場合のみエラー表示
     if (!isAlreadyDisplayed) {
       handleError(error);
     } else {
@@ -640,23 +674,21 @@ function startLoadingAnimation(mode) {
   let totalDuration;
 
   if (mode === 'fast') {
-    // キャッシュあり（2回目以降）: 0.5秒間隔でテンポよく
     loadingTexts = [
-        { id: 'loading-text-1', delay: 0 },     // 男子ー!!
-        { id: 'loading-text-2', delay: 500 },   // 女子ー!!
-        { id: 'loading-text-3', delay: 1000 },  // そうでない人ー!!
-        { id: 'loading-text-4', delay: 1500 },  // ぜー
-        { id: 'loading-text-5', delay: 2000 }   // いんっ...!!!
+        { id: 'loading-text-1', delay: 0 },
+        { id: 'loading-text-2', delay: 500 },
+        { id: 'loading-text-3', delay: 1000 },
+        { id: 'loading-text-4', delay: 1500 },
+        { id: 'loading-text-5', delay: 2000 }
     ];
-    totalDuration = 2500; // 完了までの時間（余韻含む）
+    totalDuration = 2500;
   } else {
-    // キャッシュなし（初回）: 少し待たせつつ期待感を煽る
     loadingTexts = [
-        { id: 'loading-text-1', delay: 100 },   // 男子ー!!
-        { id: 'loading-text-2', delay: 900 },   // 女子ー!!
-        { id: 'loading-text-3', delay: 1700 },  // そうでない人ー!!
-        { id: 'loading-text-4', delay: 2500 },  // ぜー
-        { id: 'loading-text-5', delay: 3000 }   // いんっ...!!!
+        { id: 'loading-text-1', delay: 100 },
+        { id: 'loading-text-2', delay: 900 },
+        { id: 'loading-text-3', delay: 1700 },
+        { id: 'loading-text-4', delay: 2500 },
+        { id: 'loading-text-5', delay: 3000 }
     ];
     totalDuration = 3800;
   }
@@ -686,7 +718,7 @@ function finishLoading() {
 function initializeApp(records, albums, songs) {
   allLiveRecords = records || [];
   albumData = albums || [];
-  songData = songs || {}; // 楽曲データ保存
+  songData = songs || {};
 
   if (records.length > 0) {
     const latestDate = records.reduce((latest, rec) => {
@@ -698,7 +730,7 @@ function initializeApp(records, albums, songs) {
 
   analyzeSongStats(records);
   analyzePatterns(records);
-  analyzeLastPlayed(records); // 最終演奏日の分析
+  analyzeLastPlayed(records);
   populateFilters(records);
   
   if (!document.getElementById('search-input').hasAttribute('data-listener-attached')) {
@@ -710,56 +742,104 @@ function initializeApp(records, albums, songs) {
   checkOrientation();
   window.addEventListener('resize', checkOrientation);
 
-  // すべてのグラフを初期化
   renderLiveCountChart();
   renderAlbumChart();
-  renderSongRanking();
+  renderSongRanking(); // ここでトグルの状態を見て描画される
   renderPatternStats();
-  renderLastPlayedRanking(); // ご無沙汰ランキング描画
+  renderLastPlayedRanking();
   renderVenueRanking();
   renderVenueLiveCountChart();
 }
 
 // -----------------------------------------------------------
-// おみくじ機能
+// ランダム機能トリガー設定 (ダブルタップ)
 // -----------------------------------------------------------
-let ticketClickCount = 0;
-let ticketClickTimer = null;
+function setupRandomTriggers() {
+  // 共通のダブルタップ検知関数
+  function createDoubleTapHandler(callback) {
+    let tapCount = 0;
+    let timer = null;
+    return (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // 親への伝播を防ぐ
+      tapCount++;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => { tapCount = 0; }, 500); // 0.5秒以内に2回
+      
+      if (tapCount >= 2) {
+        tapCount = 0;
+        clearTimeout(timer);
+        // 視覚フィードバック
+        const target = e.currentTarget;
+        target.classList.remove('tap-highlight');
+        void target.offsetWidth;
+        target.classList.add('tap-highlight');
+        callback();
+      }
+    };
+  }
 
-function setupOmikuji() {
-  const trigger = document.getElementById('omikuji-trigger');
-  if(!trigger) return;
-
-  trigger.addEventListener('click', (e) => {
-    e.preventDefault();
-    ticketClickCount++;
-    
-    // 1.5秒以内に次のクリックがなければリセット
-    if (ticketClickTimer) clearTimeout(ticketClickTimer);
-    ticketClickTimer = setTimeout(() => {
-        ticketClickCount = 0;
-    }, 1500);
-
-    if (ticketClickCount >= 3) {
-        ticketClickCount = 0;
-        clearTimeout(ticketClickTimer);
+  // 1. 公演タブ (既存のおみくじエリア)
+  const omikujiArea = document.getElementById('omikuji-trigger-area');
+  if (omikujiArea) {
+    omikujiArea.addEventListener('click', createDoubleTapHandler(() => {
         playOmikuji();
-    }
-  });
+    }));
+  }
+
+  // 2. 楽曲タブ (ランキング見出し)
+  const songHeader = document.getElementById('song-ranking-header');
+  if (songHeader) {
+    songHeader.addEventListener('click', createDoubleTapHandler(() => {
+        const songs = Object.keys(songStats);
+        if (songs.length === 0) return;
+        const randomSong = songs[Math.floor(Math.random() * songs.length)];
+        selectSong(randomSong);
+        // スクロール位置を調整
+        document.getElementById('song-ranking-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }));
+  }
+
+  // 3. 場所タブ (会場/都道府県見出し)
+  const venueHeader = document.getElementById('venue-tab-header');
+  if (venueHeader) {
+    venueHeader.addEventListener('click', createDoubleTapHandler(() => {
+        if (!venueHeader.classList.contains('active')) return;
+        // 会場からランダム
+        const venues = [];
+        allLiveRecords.forEach(rec => {
+             const v = rec.region === 'オンライン' ? 'オンライン' : `${rec.venue} (${rec.region})`;
+             if (!venues.includes(v)) venues.push(v);
+        });
+        if (venues.length === 0) return;
+        const randomVenue = venues[Math.floor(Math.random() * venues.length)];
+        selectVenue(randomVenue);
+    }));
+  }
+
+  const regionHeader = document.getElementById('region-tab-header');
+  if (regionHeader) {
+     regionHeader.addEventListener('click', createDoubleTapHandler(() => {
+        if (!regionHeader.classList.contains('active')) return;
+        // 都道府県からランダム
+        const regions = [];
+        allLiveRecords.forEach(rec => {
+            if (rec.region && !regions.includes(rec.region)) regions.push(rec.region);
+        });
+        if (regions.length === 0) return;
+        const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+        selectRegion(randomRegion);
+     }));
+  }
 }
 
 function playOmikuji() {
-    const trigger = document.getElementById('omikuji-trigger');
-    
-    // 回転アニメーション
-    trigger.classList.remove('spin-once');
-    void trigger.offsetWidth; // リフロー発生
-    trigger.classList.add('spin-once');
+    const icon = document.getElementById('omikuji-icon');
+    icon.classList.remove('spin-once');
+    void icon.offsetWidth; 
+    icon.classList.add('spin-once');
 
-    // ランダム選出
     const randomLive = allLiveRecords[Math.floor(Math.random() * allLiveRecords.length)];
-
-    // 少し待ってから結果表示
     setTimeout(() => {
         showOmikujiResult(randomLive);
     }, 600);
@@ -772,7 +852,6 @@ function showOmikujiResult(rec) {
     else if (tourNameLower.includes('love like rock')) { labelType = 'rock'; labelText = 'ROCK'; }
     else if (tourNameLower.includes('love like aloha')) { labelType = 'aloha'; labelText = 'ALOHA'; }
 
-    // カードHTML生成
     const cardHtml = `
       <div class="card-base live-card cursor-pointer shadow-md" onclick="closeModal(); showLiveDetail(allLiveRecords.find(r => r.date === '${rec.date}' && r.tourName === '${rec.tourName}'))">
         <div class="live-card-label ${labelType}">${labelText}</div>
@@ -791,9 +870,6 @@ function showOmikujiResult(rec) {
     document.getElementById('modal-overlay').style.display = 'flex';
 }
 
-// -----------------------------------------------------------
-// 紙吹雪アニメーション
-// -----------------------------------------------------------
 function startConfetti() {
   const canvas = document.getElementById('confetti-canvas');
   const ctx = canvas.getContext('2d');
@@ -909,13 +985,12 @@ function renderAlbumChart() {
     options: {
       ...chartCommonOptions,
       indexAxis: 'y',
-      // ChartDataLabelsプラグインの設定を追加
       plugins: {
         legend: { display: false },
         datalabels: {
           color: 'white',
           anchor: 'end',
-          align: 'start', // 棒の内側の右端に表示
+          align: 'start',
           offset: 4,
           font: { weight: 'bold', size: 11 },
           formatter: (value) => value > 0 ? value : ''
@@ -926,7 +1001,7 @@ function renderAlbumChart() {
         y: { ticks: { font: { size: 10 }, autoSkip: false } }
       }
     },
-    plugins: [ChartDataLabels] // プラグインを有効化
+    plugins: [ChartDataLabels]
   });
 }
 
@@ -941,12 +1016,30 @@ function renderLiveCountChart() {
   }, {});
 
   const songToSearch = document.getElementById('song-search-input').value.trim();
+  const isMedleyIncluded = document.getElementById('medley-toggle').checked;
+
   const songPlaysByYear = {};
   if (songToSearch) {
     allLiveRecords.forEach(rec => {
       if (!rec.year) return;
-      const songCountInLive = rec.setlist.filter(s => s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim().toLowerCase() === songToSearch.toLowerCase()).length;
-      if (songCountInLive > 0) songPlaysByYear[rec.year] = (songPlaysByYear[rec.year] || 0) + songCountInLive;
+      
+      let inMedley = false;
+      let count = 0;
+
+      rec.setlist.forEach(s => {
+        if (s === '__MEDLEY_START__') { inMedley = true; return; }
+        if (s === '__MEDLEY_END__') { inMedley = false; return; }
+        
+        // メドレー除外設定で、かつ現在メドレー中ならスキップ
+        if (!isMedleyIncluded && inMedley) return;
+
+        const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
+        if (clean.toLowerCase() === songToSearch.toLowerCase()) {
+            count++;
+        }
+      });
+
+      if (count > 0) songPlaysByYear[rec.year] = (songPlaysByYear[rec.year] || 0) + count;
     });
   }
 
@@ -1071,19 +1164,30 @@ function renderVenueLiveCountChart() {
 
 function analyzeSongStats(records) {
   songStats = {};
+  songStatsNoMedley = {};
 
   // 楽曲データにある全曲を0回で初期化
   if (songData) {
     Object.keys(songData).forEach(songName => {
       songStats[songName] = 0;
+      songStatsNoMedley[songName] = 0;
     });
   }
 
   records.forEach(rec => {
+    let inMedley = false;
     rec.setlist.forEach(s => {
+      if (s === '__MEDLEY_START__') { inMedley = true; return; }
+      if (s === '__MEDLEY_END__') { inMedley = false; return; }
+
       const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
-      if (clean && !s.startsWith('__MEDLEY_') && clean !== 'メドレー') {
+      if (clean && clean !== 'メドレー') {
+        // 全集計（メドレー込み）
         songStats[clean] = (songStats[clean] || 0) + 1;
+        // メドレー除外集計
+        if (!inMedley) {
+            songStatsNoMedley[clean] = (songStatsNoMedley[clean] || 0) + 1;
+        }
       }
     });
   });
@@ -1108,20 +1212,15 @@ function analyzePatterns(records) {
 function analyzeLastPlayed(records) {
   lastPlayedStats = {};
   records.forEach(rec => {
-    // 日付オブジェクト作成（rec.dateは "YYYY/MM/DD" 文字列または Dateオブジェクト）
     const recDate = new Date(rec.date);
     
     rec.setlist.forEach(s => {
-      // 除外チェック
       if (s.startsWith('__MEDLEY_') || s === 'メドレー') return;
       
       const cleanName = s.replace(/_アンコール(?: #\d+)?/g, '').trim();
       if (!cleanName) return;
-
-      // 【修正】aikoの曲（楽曲データにある曲）のみ対象
       if (!songData[cleanName]) return;
 
-      // 既存データがない、または今回のライブの方が新しい場合更新
       if (!lastPlayedStats[cleanName] || recDate > lastPlayedStats[cleanName].dateObj) {
         lastPlayedStats[cleanName] = {
           dateObj: recDate,
@@ -1137,7 +1236,6 @@ function renderLastPlayedRanking() {
   const container = document.getElementById('not-played-recently-songs');
   if (!container) return;
 
-  // 日付昇順（古い順）にソート
   const sorted = Object.entries(lastPlayedStats)
     .sort((a, b) => a[1].dateObj - b[1].dateObj)
     .slice(0, 10);
@@ -1146,8 +1244,7 @@ function renderLastPlayedRanking() {
     const rankColor = i < 3 ? ['text-aiko-pink','text-aiko-yellow','text-aiko-blue'][i] : 'text-gray-300';
     const borderClass = i !== sorted.length - 1 ? 'border-b border-gray-100' : '';
     
-    // 【修正】フォーマット変更: 曲名 <br> (西暦) ライブ名
-    return `<div class="p-3 clickable-item flex items-center ${borderClass}" onclick="selectSong('${song.replace(/'/g, "\\'")}'); switchToTab('song');">
+    return `<div class="p-3 clickable-item flex items-center ${borderClass}" onclick="selectSong('${song.replace(/'/g, "\\'")}')">
       <span class="rank-number ${rankColor}">${i + 1}</span>
       <div class="flex-1 min-w-0">
         <div class="song-title text-gray-700 truncate">${song}</div>
@@ -1244,7 +1341,7 @@ function renderLiveList(records) {
 
 function showLiveDetail(rec) {
   document.body.classList.add('detail-view');
-  currentDisplayingRecord = rec; // コピー用に保持
+  currentDisplayingRecord = rec;
 
   document.querySelectorAll('.tab-content, #main-header, nav').forEach(el => el.style.display = 'none');
 
@@ -1263,7 +1360,6 @@ function showLiveDetail(rec) {
   const detailContainer = document.getElementById('live-detail');
   detailContainer.style.display = 'block';
 
-  // --- 年代計算用の定数 ---
   const minYear = 1998;
   const maxYear = new Date().getFullYear();
 
@@ -1317,7 +1413,6 @@ function showLiveDetail(rec) {
         }
       }
       inMedley = true;
-      // 修正: メドレーの行も通常の曲と同じ構造で囲み、かつ強力に左寄せを強制
       setlistHtml += `<div class="setlist-item setlist-medley-title${nextSongIsEncore ? ' setlist-encore' : ''}" style="justify-content: flex-start;">
         <div class="setlist-left-content">
           <span class="setlist-item-number">${songNum++}.</span>
@@ -1379,7 +1474,6 @@ function showLiveDetail(rec) {
     </div>
   `;
 
-  // 見出しと凡例を横並びにするヘッダー
   const setlistHeaderHtml = `
     <div class="flex justify-between items-end mt-8 mb-2">
        <h3 class="font-bold text-gray-700 text-lg cursor-pointer flex items-center gap-2" onclick="copySetlist()">🎵 セットリスト</h3>
@@ -1422,7 +1516,6 @@ function hideDetailView() {
   currentDisplayingRecord = null;
 }
 
-// セトリコピー機能
 function copySetlist() {
   if (!currentDisplayingRecord) return;
   if (!confirm('セットリストをコピーしますか？')) return;
@@ -1459,6 +1552,8 @@ function searchRegion(region) {
 
 function selectSong(songName) {
   document.getElementById('song-search-input').value = songName;
+  // 楽曲タブへ移動してからランキング描画
+  switchToTab('song'); 
   renderSongRanking();
   renderLiveCountChart();
   document.getElementById('show-setlist-btn').style.display = 'inline-block';
@@ -1467,6 +1562,14 @@ function selectSong(songName) {
 function selectVenue(fullVenueName) {
   selectedVenueInfo = { type: 'venue', name: fullVenueName };
   document.getElementById('venue-search-input').value = fullVenueName;
+  // 場所タブへ移動
+  switchToTab('venue');
+  // 明示的に会場タブをアクティブにする
+  document.querySelectorAll('.venue-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.venue-tab[data-venue-tab="venue"]').classList.add('active');
+  document.getElementById('venue-ranking-container').style.display = 'block';
+  document.getElementById('region-ranking-container').style.display = 'none';
+  
   renderVenueRanking();
   renderVenueLiveCountChart();
   document.getElementById('venue-show-setlist-btn').style.display = 'inline-block';
@@ -1475,6 +1578,13 @@ function selectVenue(fullVenueName) {
 function selectRegion(regionName) {
   selectedVenueInfo = { type: 'region', name: regionName };
   document.getElementById('venue-search-input').value = regionName;
+  switchToTab('venue');
+  // 明示的に都道府県タブをアクティブにする
+  document.querySelectorAll('.venue-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.venue-tab[data-venue-tab="region"]').classList.add('active');
+  document.getElementById('venue-ranking-container').style.display = 'none';
+  document.getElementById('region-ranking-container').style.display = 'block';
+
   renderVenueRanking();
   renderVenueLiveCountChart();
   document.getElementById('venue-show-setlist-btn').style.display = 'inline-block';
@@ -1488,7 +1598,9 @@ function switchToTab(tabId) {
   document.getElementById('app').scrollTop = 0;
   lucide.createIcons();
 
-  if (tabId === 'song' && chartInstances.liveCount) chartInstances.liveCount.resize();
+  if (tabId === 'song') {
+    if(chartInstances.liveCount) chartInstances.liveCount.resize();
+  }
   if (tabId === 'pattern') {
     renderAlbumChart();
   }
@@ -1502,35 +1614,32 @@ function renderSongRanking() {
   if (!container) return;
   const sortOrder = document.getElementById('song-sort').value;
   const searchTerm = document.getElementById('song-search-input').value.toLowerCase();
+  
+  // トグルの状態を確認
+  const isMedleyIncluded = document.getElementById('medley-toggle').checked;
+  const targetStats = isMedleyIncluded ? songStats : songStatsNoMedley;
 
-  // フィルタリングとソート
-  const sortedSongs = Object.entries(songStats)
+  const sortedSongs = Object.entries(targetStats)
     .filter(([song]) => song.toLowerCase().startsWith(searchTerm))
     .map(([song, count]) => ({ song, count }))
     .sort((a, b) => sortOrder === 'count-desc' ? b.count - a.count : a.count - b.count);
 
   document.getElementById('total-songs').textContent = Object.keys(songStats).length;
   
-  // 順位付けロジック（同率順位対応）
   let currentRank = 0;
   let lastCount = -1;
   let skip = 1;
 
   container.innerHTML = sortedSongs.map((item, index) => {
-    // 最初のアイテム、またはカウントが変わった場合にランクを更新
     if (item.count !== lastCount) {
         if (lastCount !== -1) {
-            // 前回のカウントと違う場合、スキップしていた分を加算してランクを進める（Standard Competition Ranking）
-            // 例: 1位, 1位, 3位... とする場合
             currentRank += skip;
             skip = 1;
         } else {
-            // 初回
             currentRank = 1;
         }
         lastCount = item.count;
     } else {
-        // カウントが同じならランクは据え置きでスキップ数を増やす
         skip++;
     }
 
@@ -1641,6 +1750,14 @@ function setupEventListeners() {
     document.getElementById('show-setlist-btn').style.display = 'none';
   });
 
+  // メドレー切り替えトグル
+  document.getElementById('medley-toggle').addEventListener('change', () => {
+      // ランキング再描画
+      renderSongRanking();
+      // グラフも再描画
+      renderLiveCountChart();
+  });
+
   document.getElementById('show-setlist-btn').addEventListener('click', () => {
     const songName = document.getElementById('song-search-input').value;
     if (songName) {
@@ -1729,3 +1846,5 @@ function closeInfoModal() {
   document.getElementById('info-modal').style.display = 'none';
 }
 </script>
+</body>
+</html>
