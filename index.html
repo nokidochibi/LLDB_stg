@@ -823,6 +823,26 @@ let allLiveRecords = [],
 let selectedVenueInfo = null;
 let currentDisplayingRecord = null;
 
+// 安全なキャッシュ保存（容量エラー対策）
+function saveToCache(data) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn("Cache save failed:", e);
+    // 容量エラー(QuotaExceededError)の場合、古いキャッシュを消して再トライ
+    if (e.name === 'QuotaExceededError' || e.message.includes('quota')) {
+       console.log("Clearing old cache...");
+       localStorage.clear(); // 全削除して再トライ
+       try {
+         localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+       } catch (e2) {
+         console.error("Retry failed. App will run without cache.", e2);
+         // それでもダメなら保存を諦めるが、アプリは止めない
+       }
+    }
+  }
+}
+
 // 一括データ取得＆キャッシュ更新
 async function loadAllData(isAlreadyDisplayed) {
   try {
@@ -834,7 +854,9 @@ async function loadAllData(isAlreadyDisplayed) {
         throw new Error(data.message);
     }
 
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    // キャッシュ保存（失敗してもアプリは動かす）
+    saveToCache(data);
+
     try {
         initializeApp(data);
     } catch(e) {
@@ -846,8 +868,8 @@ async function loadAllData(isAlreadyDisplayed) {
     }
   } catch (error) {
     if (!isAlreadyDisplayed) {
+      // 致命的な取得エラーの場合のみエラー画面へ
       handleError(error); 
-      // エラー時でも強制的にPromiseを解決させ、ローディング画面が固まらないようにする
       appInitializedResolver();
     } else {
       console.log("Background update failed, keeping cached data.");
@@ -1045,7 +1067,8 @@ function renderHistoryTab() {
                     });
                 }
             } else if (event.type === 'single') {
-                timelineData[ym].single.push({ name: title });
+                // シングルは同月内で日付ごとにグルーピングするために、詳細な日付オブジェクトも保存しておく
+                timelineData[ym].single.push({ name: title, dateObj: d });
             } else if (event.type === 'album') {
                 // 同じ月に「まとめ1」「まとめ2」がある場合、「まとめ」が2つにならないように重複チェック
                 if (!timelineData[ym].album.some(a => a.name === title)) {
@@ -1114,11 +1137,22 @@ function renderHistoryTab() {
             });
         }
 
-        // SINGLE列: 同月発売はスラッシュ区切りでまとめる
+        // SINGLE列: 同月かつ同日発売はスラッシュ区切りでまとめる
         let singleHtml = '';
         if (data.single.length > 0) {
-            const combinedName = data.single.map(s => s.name).join('/');
-            singleHtml = `<div class="event-chip single">${combinedName}</div>`;
+            // 日付ごとにグルーピング
+            const groupedByDate = {};
+            data.single.forEach(s => {
+                const dateKey = s.dateObj.getDate(); // 日付だけ取得
+                if (!groupedByDate[dateKey]) groupedByDate[dateKey] = [];
+                groupedByDate[dateKey].push(s.name);
+            });
+            
+            // グループごとにチップ生成
+            Object.keys(groupedByDate).sort((a,b) => a - b).forEach(d => {
+                 const combinedName = groupedByDate[d].join('/');
+                 singleHtml += `<div class="event-chip single">${combinedName}</div>`;
+            });
         }
 
         // ALBUM列
