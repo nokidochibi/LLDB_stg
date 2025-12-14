@@ -1057,11 +1057,21 @@ function renderHistoryTab() {
         const ym = `${d.getFullYear()}/${('0' + (d.getMonth() + 1)).slice(-2)}`;
         if (timelineData[ym]) {
             if (event.type === 'live') {
-                const shortName = formatTourName(event.title);
-                // 重複排除 (同月に同じツアーが複数回あっても1つ表示)
-                if (!timelineData[ym].live.some(e => e.name === shortName)) {
+                // 自動整形の名前（IDとして使用）
+                const tourId = formatTourName(event.title);
+                
+                // 表示用名前（F列に略称があればそれを使う）
+                let displayName = tourId;
+                const matchedRecord = allLiveRecords.find(r => r.tourName === event.title);
+                if (matchedRecord && matchedRecord.shortTourName) {
+                    displayName = matchedRecord.shortTourName;
+                }
+
+                // 重複排除 (同月に同じツアーIDが複数回あっても1つ表示)
+                if (!timelineData[ym].live.some(e => e.tourId === tourId)) {
                     timelineData[ym].live.push({ 
-                        name: shortName, 
+                        name: displayName, // 画面表示用
+                        tourId: tourId,    // ロジック判定用 (Pop12など)
                         rawName: event.title,
                         rawDate: event.date // 検索用
                     });
@@ -1123,11 +1133,11 @@ function renderHistoryTab() {
         // その月にライブがあればチップを表示
         if (data.live.length > 0) {
             data.live.forEach(l => {
-                // ツアー期間中で、かつそのチップがツアー名と一致する場合はライン上に配置
-                const isTourLive = activeTourId && l.name === activeTourId;
+                // ツアー期間中で、かつそのチップがツアーIDと一致する場合はライン上に配置
+                const isTourLive = activeTourId && l.tourId === activeTourId;
                 
                 // 単発の場合のドット表示（ツアーラインがない場合のみ）
-                if (!activeTourId && l.name.match(/^(Pop|Rock|Aloha)/)) {
+                if (!activeTourId && l.tourId.match(/^(Pop|Rock|Aloha)/)) {
                      liveHtml += `<div class="tour-dot"></div>`;
                 }
 
