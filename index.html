@@ -10,11 +10,11 @@
 <meta name="apple-mobile-web-app-title" content="LLDB">
 <meta name="application-name" content="LLDB">
 
-<!-- アプリアイコン (GitHub上の icon.png を使用) -->
+<!-- アプリアイコン -->
 <link rel="icon" type="image/png" href="./icon.png">
 <link rel="apple-touch-icon" href="./icon.png">
 
-<!-- Web App Manifest (Data URI) -->
+<!-- Web App Manifest -->
 <link rel="manifest" href='data:application/manifest+json,{"name":"Love Like DataBase","short_name":"LLDB","start_url":".","display":"standalone","background_color":"#F8F8F8","theme_color":"#ef4444","icons":[{"src":"./icon.png","sizes":"192x192 512x512","type":"image/png"}]}'>
 
 <!-- Scripts and Styles -->
@@ -257,7 +257,7 @@ nav > div {
 }
 .history-line-bg {
   position: absolute;
-  left: 63px; /* ドットの中心に合わせる */
+  left: 63px;
   top: 10px;
   bottom: 10px;
   width: 2px;
@@ -307,7 +307,7 @@ nav > div {
   border-radius: 50%;
   border: 2px solid white;
   box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-  background-color: #d1d5db; /* Default */
+  background-color: #d1d5db;
 }
 .history-dot.live { background-color: var(--aiko-red); }
 .history-dot.single { background-color: var(--aiko-blue); }
@@ -396,7 +396,7 @@ button { font-size: 14px !important; }
   margin-bottom: -3px; transition: all 0.2s; background: white; }
 .venue-tab.active { color: var(--aiko-pink); border-bottom-color: var(--aiko-pink); }
 
-/* トグルスイッチ用スタイル（修正版） */
+/* トグルスイッチ用スタイル */
 .toggle-checkbox {
   position: absolute;
   opacity: 0;
@@ -589,7 +589,7 @@ button { font-size: 14px !important; }
     <div id="song-ranking-container"></div>
   </div>
 
-  <!-- 軌跡（歴史）タブ：新規追加 -->
+  <!-- 軌跡（歴史）タブ -->
   <div id="tab-history" class="tab-content" style="display:none">
     <div class="mb-4 px-1">
       <h3 class="font-bold text-gray-700 text-xl">⏳ 1998年からの軌跡</h3>
@@ -745,8 +745,8 @@ button { font-size: 14px !important; }
 <script>
 // GASのAPIエンドポイント
 const API_URL = "https://script.google.com/macros/s/AKfycbzmH5dDDdgd1pbxmtFWnjK7eo2Kgv4BBeBBUDcYzXdrFXVQl2KmPH8mNXyLsFMHWoWz/exec";
-// キャッシュキー (ここを変更して強制更新させる)
-const CACHE_KEY = 'lldb_data_v3_9'; // Vol.3.0用に更新
+// キャッシュキー (更新して強制リフレッシュ)
+const CACHE_KEY = 'lldb_data_v3_9_fix1';
 
 // アプリの初期化Promise
 let appInitializedResolver;
@@ -762,11 +762,9 @@ const animationFinishedPromise = new Promise(resolve => {
 
 document.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons();
-  
-  // ダブルタップなどのイベント設定
   setupRandomTriggers();
 
-  // 1. キャッシュがあれば即表示
+  // 1. キャッシュ確認
   const cachedData = localStorage.getItem(CACHE_KEY);
   let isCachedLoaded = false;
 
@@ -774,7 +772,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const parsed = JSON.parse(cachedData);
       if (parsed.liveRecords && parsed.liveRecords.length > 0) {
-        initializeApp(parsed.liveRecords, parsed.albumData, parsed.songData);
+        initializeApp(parsed);
         appInitializedResolver(); 
         isCachedLoaded = true;
       }
@@ -783,10 +781,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 2. ローディング演出
+  // 2. ローディング開始
   startLoadingAnimation(isCachedLoaded ? 'fast' : 'normal');
 
-  // 3. 最新データ取得
+  // 3. データ取得
   loadAllData(isCachedLoaded);
 
   Promise.all([appInitializedPromise, animationFinishedPromise]).then(() => {
@@ -795,12 +793,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let allLiveRecords = [], 
-    songStats = {},            // メドレー込み（デフォルト）
-    songStatsNoMedley = {},    // メドレー除外（フル尺のみ）
+    songStats = {},            
+    songStatsNoMedley = {},    
     patternStats = {}, 
     lastPlayedStats = {}, 
     albumData = [], 
     songData = {}, 
+    historyData = [], // 新規追加
     chartInstances = {};
 let selectedVenueInfo = null;
 let currentDisplayingRecord = null;
@@ -812,8 +811,12 @@ async function loadAllData(isAlreadyDisplayed) {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
 
+    if (data.status === 'error') {
+        throw new Error(data.message);
+    }
+
     localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    initializeApp(data.liveRecords, data.albumData, data.songData);
+    initializeApp(data);
 
     if (!isAlreadyDisplayed) {
       appInitializedResolver();
@@ -873,26 +876,35 @@ function finishLoading() {
   }, 500);
 }
 
-function initializeApp(records, albums, songs) {
-  allLiveRecords = records || [];
-  albumData = albums || [];
-  songData = songs || {};
+function initializeApp(data) {
+  allLiveRecords = data.liveRecords || [];
+  albumData = data.albumData || [];
+  songData = data.songData || {};
+  historyData = data.historyData || []; // GASで作成された歴史データ
 
-  if (records.length > 0) {
-    const latestDate = records.reduce((latest, rec) => {
-      const d = new Date(rec.date);
-      return d > latest ? d : latest;
-    }, new Date(0));
-    document.getElementById('last-update-date').textContent = `${latestDate.getFullYear()}/${('0' + (latestDate.getMonth() + 1)).slice(-2)}/${('0' + latestDate.getDate()).slice(-2)}`;
+  if (allLiveRecords.length > 0) {
+    // 最終更新日の計算（日付パースの安全策）
+    try {
+        const latestDate = allLiveRecords.reduce((latest, rec) => {
+          const d = new Date(rec.date);
+          return d > latest ? d : latest;
+        }, new Date(0));
+        
+        if (!isNaN(latestDate.getTime())) {
+            document.getElementById('last-update-date').textContent = `${latestDate.getFullYear()}/${('0' + (latestDate.getMonth() + 1)).slice(-2)}/${('0' + latestDate.getDate()).slice(-2)}`;
+        }
+    } catch(e) { console.error(e); }
   }
 
-  analyzeSongStats(records);
-  analyzePatterns(records);
-  analyzeLastPlayed(records);
-  populateFilters(records);
+  analyzeSongStats(allLiveRecords);
+  analyzePatterns(allLiveRecords);
+  analyzeLastPlayed(allLiveRecords);
+  populateFilters(allLiveRecords);
   
-  // 歴史タブのレンダリング
-  renderHistoryTab();
+  // 歴史タブのレンダリング（データがある場合のみ）
+  if (historyData.length > 0) {
+      renderHistoryTab();
+  }
 
   if (!document.getElementById('search-input').hasAttribute('data-listener-attached')) {
     setupEventListeners();
@@ -905,7 +917,7 @@ function initializeApp(records, albums, songs) {
 
   renderLiveCountChart();
   renderAlbumChart();
-  renderSongRanking(); // ここでトグルの状態を見て描画される
+  renderSongRanking(); 
   renderPatternStats();
   renderLastPlayedRanking();
   renderVenueRanking();
@@ -913,97 +925,42 @@ function initializeApp(records, albums, songs) {
 }
 
 // -----------------------------------------------------------
-// 軌跡（歴史）タブのロジック
+// 軌跡（歴史）タブのロジック (簡易化)
 // -----------------------------------------------------------
 function renderHistoryTab() {
     const container = document.getElementById('history-list-container');
     if (!container) return;
 
-    // 1. 全データを単一のイベントリストに変換
-    let events = [];
-
-    // ライブ記録
-    allLiveRecords.forEach(rec => {
-        if (!rec.date) return;
-        events.push({
-            type: 'live',
-            date: new Date(rec.date),
-            title: rec.tourName,
-            subTitle: `${rec.venue} (${rec.region})`,
-            data: rec // 詳細表示用
-        });
-    });
-
-    // シングル（表題曲）
-    if (songData) {
-        Object.entries(songData).forEach(([name, info]) => {
-            if (info.type === '表題曲' && info.releaseDate) {
-                events.push({
-                    type: 'single',
-                    date: new Date(info.releaseDate),
-                    title: name,
-                    subTitle: 'Single Release',
-                    data: null
-                });
-            }
-        });
-    }
-
-    // アルバム
-    if (albumData) {
-        albumData.forEach(album => {
-            if (album.releaseDate) {
-                events.push({
-                    type: 'album',
-                    date: new Date(album.releaseDate),
-                    title: album.albumName,
-                    subTitle: 'Album Release',
-                    data: null
-                });
-            }
-        });
-    }
-
-    // 2. 日付の古い順（昇順）にソート
-    events.sort((a, b) => a.date - b.date);
-
-    // 3. HTML生成
     let html = '';
     let lastYear = null;
 
-    events.forEach(event => {
-        const year = event.date.getFullYear();
-        const month = ('0' + (event.date.getMonth() + 1)).slice(-2);
-        const day = ('0' + event.date.getDate()).slice(-2);
+    historyData.forEach(event => {
+        // 日付解析（文字列 'YYYY/MM/DD' を想定）
+        let year, month, day;
+        try {
+            const parts = event.date.split('/');
+            year = parts[0];
+            month = parts[1];
+            day = parts[2];
+        } catch(e) {
+            return; // 日付不正ならスキップ
+        }
         
-        // 年が変わったら年表示、そうでなければ空文字
         const yearDisplay = (year !== lastYear) ? year : '';
         lastYear = year;
 
-        let dotClass = '';
-        let tagText = '';
-        let tagClass = '';
-        let onClickAttr = '';
+        let dotClass = '', tagText = '', tagClass = '', onClickAttr = '';
 
         if (event.type === 'live') {
-            dotClass = 'live';
-            tagText = 'LIVE';
-            tagClass = 'live';
-            // ライブの場合はクリックで詳細へ飛ぶ（関数呼び出しはstringで渡す必要があるため注意）
-            // JSON.stringifyだとクォートのエスケープが面倒なので、ID検索などにするのが安全だが、
-            // ここでは簡易的に allLiveRecords から検索するロジックを埋め込む
+            dotClass = 'live'; tagText = 'LIVE'; tagClass = 'live';
+            // 安全な文字列エスケープ
             const safeTourName = event.title.replace(/'/g, "\\'");
-            const safeDate = `${year}/${month}/${day}`; // フォーマット一致前提
-            // clickイベントは別途設定するか、シンプルに検索へ飛ばす
+            const safeDate = event.date;
             onClickAttr = `onclick="findAndShowLive('${safeDate}', '${safeTourName}')"`;
         } else if (event.type === 'single') {
-            dotClass = 'single';
-            tagText = 'SINGLE';
-            tagClass = 'single';
+            dotClass = 'single'; tagText = 'SINGLE'; tagClass = 'single';
         } else if (event.type === 'album') {
-            dotClass = 'album';
-            tagText = 'ALBUM';
-            tagClass = 'album';
+            dotClass = 'album'; tagText = 'ALBUM'; tagClass = 'album';
         }
 
         html += `
@@ -1022,51 +979,39 @@ function renderHistoryTab() {
                     <div class="history-sub">${event.subTitle}</div>
                 </div>
             </div>
-        </div>
-        `;
+        </div>`;
     });
 
     container.innerHTML = html;
 }
 
-// 歴史タブからライブ詳細へ飛ぶためのヘルパー
 window.findAndShowLive = function(dateStr, tourName) {
-    const rec = allLiveRecords.find(r => r.tourName === tourName); 
-    // 日付判定を緩くする（同じツアーならOKとするか、厳密にするか。ここではツアー名でヒットした最初のものを表示してみる、もしくは検索タブへ）
-    // 厳密にやるなら dateStr と比較したいが、GASからの dateStr とフォーマットが合うか微妙。
-    // ここでは「ツアー名」で検索して、そのツアーのリストを表示する挙動にするのが自然かも。
-    
-    // 検索タブへ移動してフィルタリング
     document.getElementById('search-input').value = tourName;
-    // 他のフィルタクリア
     document.getElementById('tour-select').value = '';
     document.getElementById('year-select').value = '';
     document.getElementById('region-select').value = '';
     document.getElementById('song-filter-input').value = '';
-    
     switchToTab('search');
     applyFilters();
 }
 
 // -----------------------------------------------------------
-// ランダム機能トリガー設定 (ダブルタップ)
+// 以下、既存ロジック（変更なし）
 // -----------------------------------------------------------
 function setupRandomTriggers() {
-  // 共通のダブルタップ検知関数
   function createDoubleTapHandler(callback) {
     let tapCount = 0;
     let timer = null;
     return (e) => {
       e.preventDefault();
-      e.stopPropagation(); // 親への伝播を防ぐ
+      e.stopPropagation(); 
       tapCount++;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => { tapCount = 0; }, 500); // 0.5秒以内に2回
+      timer = setTimeout(() => { tapCount = 0; }, 500); 
       
       if (tapCount >= 2) {
         tapCount = 0;
         clearTimeout(timer);
-        // 視覚フィードバック
         const target = e.currentTarget;
         target.classList.remove('tap-highlight');
         void target.offsetWidth;
@@ -1076,7 +1021,6 @@ function setupRandomTriggers() {
     };
   }
 
-  // 1. 公演タブ (既存のおみくじエリア)
   const omikujiArea = document.getElementById('omikuji-trigger-area');
   if (omikujiArea) {
     omikujiArea.addEventListener('click', createDoubleTapHandler(() => {
@@ -1084,37 +1028,29 @@ function setupRandomTriggers() {
     }));
   }
 
-  // 2. 楽曲タブ (ランキング見出し)
   const songHeader = document.getElementById('song-ranking-header');
   if (songHeader) {
     songHeader.addEventListener('click', createDoubleTapHandler(() => {
-        // 回転アニメーション
         const icon = document.getElementById('song-ranking-icon');
         if (icon) {
             icon.classList.remove('spin-once');
-            void icon.offsetWidth; // リフロー
+            void icon.offsetWidth; 
             icon.classList.add('spin-once');
         }
-
         const songs = Object.keys(songStats);
         if (songs.length === 0) return;
         const randomSong = songs[Math.floor(Math.random() * songs.length)];
-        
-        // 少し遅延させて結果を表示（回転を見せるため）
         setTimeout(() => {
             selectSong(randomSong);
-            // スクロール位置を調整
             document.getElementById('song-ranking-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 600);
     }));
   }
 
-  // 3. 場所タブ (会場/都道府県見出し)
   const venueHeader = document.getElementById('venue-tab-header');
   if (venueHeader) {
     venueHeader.addEventListener('click', createDoubleTapHandler(() => {
         if (!venueHeader.classList.contains('active')) return;
-        // 会場からランダム
         const venues = [];
         allLiveRecords.forEach(rec => {
              const v = rec.region === 'オンライン' ? 'オンライン' : `${rec.venue} (${rec.region})`;
@@ -1130,7 +1066,6 @@ function setupRandomTriggers() {
   if (regionHeader) {
      regionHeader.addEventListener('click', createDoubleTapHandler(() => {
         if (!regionHeader.classList.contains('active')) return;
-        // 都道府県からランダム
         const regions = [];
         allLiveRecords.forEach(rec => {
             if (rec.region && !regions.includes(rec.region)) regions.push(rec.region);
@@ -1339,7 +1274,6 @@ function renderLiveCountChart() {
         if (s === '__MEDLEY_START__') { inMedley = true; return; }
         if (s === '__MEDLEY_END__') { inMedley = false; return; }
         
-        // メドレー除外設定で、かつ現在メドレー中ならスキップ
         if (!isMedleyIncluded && inMedley) return;
 
         const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
@@ -1475,10 +1409,8 @@ function analyzeSongStats(records) {
   songStats = {};
   songStatsNoMedley = {};
 
-  // 楽曲データにある全曲を0回で初期化
   if (songData) {
     Object.keys(songData).forEach(songName => {
-      // カギカッコ付き（カバー曲など）は初期化もしない（除外）
       if (!songName.includes('[') && !songName.includes(']')) {
           songStats[songName] = 0;
           songStatsNoMedley[songName] = 0;
@@ -1494,11 +1426,8 @@ function analyzeSongStats(records) {
 
       const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
       
-      // 除外判定: メドレー文字、または [] を含む曲
       if (clean && clean !== 'メドレー' && !clean.includes('[') && !clean.includes(']')) {
-        // 全集計（メドレー込み）
         songStats[clean] = (songStats[clean] || 0) + 1;
-        // メドレー除外集計
         if (!inMedley) {
             songStatsNoMedley[clean] = (songStatsNoMedley[clean] || 0) + 1;
         }
@@ -1510,7 +1439,6 @@ function analyzeSongStats(records) {
 function analyzePatterns(records) {
   const o = {}, e = {}, l = {};
   records.forEach(rec => {
-    // メドレー区間を完全に除外してリストを作成する
     const cleanSetlist = [];
     let inMedley = false;
     
@@ -1518,10 +1446,9 @@ function analyzePatterns(records) {
         if (s === '__MEDLEY_START__') { inMedley = true; return; }
         if (s === '__MEDLEY_END__') { inMedley = false; return; }
         
-        if (inMedley) return; // メドレー中は無視
+        if (inMedley) return; 
 
         const clean = s.replace(/_アンコール/g, '').replace(/#\d+$/g, '').trim();
-        // 除外判定: メドレー文字、または [] を含む曲
         if (clean && clean !== 'メドレー' && !clean.includes('[') && !clean.includes(']')) {
             cleanSetlist.push(clean);
         }
@@ -1532,7 +1459,6 @@ function analyzePatterns(records) {
         l[cleanSetlist[cleanSetlist.length - 1]] = (l[cleanSetlist[cleanSetlist.length - 1]] || 0) + 1;
     }
 
-    // アンコール集計（ここもメドレー内アンコールは除外）
     let inMedleyForEncore = false;
     rec.setlist.forEach(s => {
         if (s === '__MEDLEY_START__') { inMedleyForEncore = true; return; }
@@ -1560,7 +1486,6 @@ function analyzeLastPlayed(records) {
       
       const cleanName = s.replace(/_アンコール(?: #\d+)?/g, '').trim();
       if (!cleanName) return;
-      // カギカッコ付きを除外
       if (cleanName.includes('[') || cleanName.includes(']')) return;
       if (!songData[cleanName]) return;
 
@@ -1914,7 +1839,6 @@ function searchRegion(region) {
 
 function selectSong(songName) {
   document.getElementById('song-search-input').value = songName;
-  // 楽曲タブへ移動してからランキング描画
   switchToTab('song'); 
   renderSongRanking();
   renderLiveCountChart();
@@ -1924,9 +1848,7 @@ function selectSong(songName) {
 function selectVenue(fullVenueName) {
   selectedVenueInfo = { type: 'venue', name: fullVenueName };
   document.getElementById('venue-search-input').value = fullVenueName;
-  // 場所タブへ移動
   switchToTab('venue');
-  // 明示的に会場タブをアクティブにする
   document.querySelectorAll('.venue-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.venue-tab[data-venue-tab="venue"]').classList.add('active');
   document.getElementById('venue-ranking-container').style.display = 'block';
@@ -1941,7 +1863,6 @@ function selectRegion(regionName) {
   selectedVenueInfo = { type: 'region', name: regionName };
   document.getElementById('venue-search-input').value = regionName;
   switchToTab('venue');
-  // 明示的に都道府県タブをアクティブにする
   document.querySelectorAll('.venue-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.venue-tab[data-venue-tab="region"]').classList.add('active');
   document.getElementById('venue-ranking-container').style.display = 'none';
@@ -1977,7 +1898,6 @@ function renderSongRanking() {
   const sortOrder = document.getElementById('song-sort').value;
   const searchTerm = document.getElementById('song-search-input').value.toLowerCase();
   
-  // トグルの状態を確認
   const isMedleyIncluded = document.getElementById('medley-toggle').checked;
   const targetStats = isMedleyIncluded ? songStats : songStatsNoMedley;
 
