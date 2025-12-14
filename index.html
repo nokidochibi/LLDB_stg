@@ -126,8 +126,33 @@ nav > div {
   align-items: center;
   justify-content: space-between;
   min-height: 36px;
+  /* 左側のボーダー用スペース確保 */
+  border-left: 4px solid transparent; 
+  padding-left: 8px; /* ボーダーとの余白 */
 }
 .setlist-item:last-child { border-bottom: none; }
+
+/* メドレーの黄色いライン */
+.setlist-medley, .setlist-medley-title {
+  border-left-color: var(--aiko-yellow) !important;
+  background-color: #fffbeb; /* 薄い黄色背景も少しつけるとわかりやすい */
+}
+
+/* アンコールの赤いライン */
+.setlist-encore {
+  border-left-color: var(--aiko-red) !important;
+  background-color: #fef2f2; /* 薄い赤色背景 */
+}
+
+/* アンコールヘッダー（拍手などのテキスト） */
+.setlist-encore-header {
+  margin-top: 12px;
+  margin-bottom: 4px;
+  font-weight: bold;
+  color: var(--aiko-red);
+  font-size: 14px;
+  padding-left: 4px;
+}
 
 .setlist-left-content {
   display: flex;
@@ -1205,37 +1230,47 @@ window.findAndShowLive = function(dateStr, tourName) {
 // -----------------------------------------------------------
 function setupRandomTriggers() {
   function createDoubleTapHandler(callback) {
-    let tapCount = 0;
-    let timer = null;
+    let lastTap = 0;
     return (e) => {
-      e.preventDefault();
-      e.stopPropagation(); 
-      tapCount++;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => { tapCount = 0; }, 500); 
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTap;
       
-      if (tapCount >= 2) {
-        tapCount = 0;
-        clearTimeout(timer);
+      // ダブルタップと判定する間隔 (ミリ秒)
+      if (tapLength < 500 && tapLength > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // ターゲットにエフェクト付与
         const target = e.currentTarget;
         target.classList.remove('tap-highlight');
-        void target.offsetWidth;
+        void target.offsetWidth; // リフロー強制
         target.classList.add('tap-highlight');
+        
         callback();
+        
+        // 連続発火を防ぐため、少し長めにインターバルを取る
+        lastTap = 0; 
+      } else {
+        lastTap = currentTime;
       }
     };
   }
 
   const omikujiArea = document.getElementById('omikuji-trigger-area');
   if (omikujiArea) {
-    omikujiArea.addEventListener('click', createDoubleTapHandler(() => {
+    omikujiArea.addEventListener('touchend', createDoubleTapHandler(() => {
         playOmikuji();
     }));
+    // PCでのダブルクリック対応
+    omikujiArea.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        playOmikuji();
+    });
   }
 
   const songHeader = document.getElementById('song-ranking-header');
   if (songHeader) {
-    songHeader.addEventListener('click', createDoubleTapHandler(() => {
+    const handler = createDoubleTapHandler(() => {
         const icon = document.getElementById('song-ranking-icon');
         if (icon) {
             icon.classList.remove('spin-once');
@@ -1249,12 +1284,18 @@ function setupRandomTriggers() {
             selectSong(randomSong);
             document.getElementById('song-ranking-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 600);
-    }));
+    });
+    
+    songHeader.addEventListener('touchend', handler);
+    songHeader.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        handler({ currentTarget: songHeader, preventDefault: () => {}, stopPropagation: () => {} });
+    });
   }
 
   const venueHeader = document.getElementById('venue-tab-header');
   if (venueHeader) {
-    venueHeader.addEventListener('click', createDoubleTapHandler(() => {
+    const handler = createDoubleTapHandler(() => {
         if (!venueHeader.classList.contains('active')) return;
         const venues = [];
         allLiveRecords.forEach(rec => {
@@ -1264,12 +1305,17 @@ function setupRandomTriggers() {
         if (venues.length === 0) return;
         const randomVenue = venues[Math.floor(Math.random() * venues.length)];
         selectVenue(randomVenue);
-    }));
+    });
+    venueHeader.addEventListener('touchend', handler);
+    venueHeader.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        handler({ currentTarget: venueHeader, preventDefault: () => {}, stopPropagation: () => {} });
+    });
   }
 
   const regionHeader = document.getElementById('region-tab-header');
   if (regionHeader) {
-     regionHeader.addEventListener('click', createDoubleTapHandler(() => {
+     const handler = createDoubleTapHandler(() => {
         if (!regionHeader.classList.contains('active')) return;
         const regions = [];
         allLiveRecords.forEach(rec => {
@@ -1278,7 +1324,12 @@ function setupRandomTriggers() {
         if (regions.length === 0) return;
         const randomRegion = regions[Math.floor(Math.random() * regions.length)];
         selectRegion(randomRegion);
-     }));
+     });
+     regionHeader.addEventListener('touchend', handler);
+     regionHeader.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        handler({ currentTarget: regionHeader, preventDefault: () => {}, stopPropagation: () => {} });
+     });
   }
 }
 
